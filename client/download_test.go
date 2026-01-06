@@ -50,3 +50,47 @@ func TestDownloadSystemMedia(t *testing.T) {
 		t.Error("Expected media data to be at least 8 bytes")
 	}
 }
+
+func TestDownloadGroupMedia(t *testing.T) {
+	client := testClient(t)
+
+	params := DownloadGroupMediaParams{
+		GroupID: "10", // Genre ID
+		Media:   "logo-monochrome",
+	}
+
+	data, err := client.DownloadGroupMedia(params)
+	if err != nil {
+		t.Fatalf("DownloadGroupMedia() error = %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("Expected non-empty media data")
+	}
+
+	if len(data) < 8 {
+		t.Error("Expected media data to be at least 8 bytes")
+	}
+}
+
+func TestDownloadCompanyMedia(t *testing.T) {
+	client := testClient(t)
+
+	params := DownloadCompanyMediaParams{
+		CompanyID: "2", // Company ID
+		Media:     "logo-monochrome",
+	}
+
+	data, err := client.DownloadCompanyMedia(params)
+	if err != nil {
+		t.Fatalf("DownloadCompanyMedia() error = %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("Expected non-empty media data")
+	}
+
+	if len(data) < 8 {
+		t.Error("Expected media data to be at least 8 bytes")
+	}
+}

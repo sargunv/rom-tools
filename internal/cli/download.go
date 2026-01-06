@@ -12,6 +12,8 @@ import (
 var (
 	dlSystemID  string
 	dlGameID    string
+	dlGroupID   string
+	dlCompanyID string
 	dlMedia     string
 	dlOutput    string
 	dlMaxWidth  string
@@ -119,6 +121,98 @@ Example:
 	},
 }
 
+var downloadGroupMediaCmd = &cobra.Command{
+	Use:   "group",
+	Short: "Download group media",
+	Long: `Download group media (genres, modes, families, themes, styles)
+
+Example:
+  screenscraper download group --group-id=1 --media="logo-monochrome" --output=genre.png`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if dlGroupID == "" || dlMedia == "" {
+			return fmt.Errorf("--group-id and --media are required")
+		}
+
+		params := screenscraper.DownloadGroupMediaParams{
+			GroupID:      dlGroupID,
+			Media:        dlMedia,
+			MaxWidth:     dlMaxWidth,
+			MaxHeight:    dlMaxHeight,
+			OutputFormat: dlFormat,
+		}
+
+		data, err := client.DownloadGroupMedia(params)
+		if err != nil {
+			return err
+		}
+
+		// Check if it's a text response (NOMEDIA, CRCOK, etc.)
+		if len(data) < 100 && data[0] != 0xFF && data[0] != 0x89 { // not binary
+			fmt.Printf("Response: %s\n", string(data))
+			return nil
+		}
+
+		// Write to file or stdout
+		if dlOutput == "" || dlOutput == "-" {
+			_, err = os.Stdout.Write(data)
+			return err
+		}
+
+		if err := os.WriteFile(dlOutput, data, 0644); err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+
+		fmt.Printf("Saved to %s (%d bytes)\n", dlOutput, len(data))
+		return nil
+	},
+}
+
+var downloadCompanyMediaCmd = &cobra.Command{
+	Use:   "company",
+	Short: "Download company media",
+	Long: `Download company media (publishers, developers)
+
+Example:
+  screenscraper download company --company-id=3 --media="logo-monochrome" --output=company.png`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if dlCompanyID == "" || dlMedia == "" {
+			return fmt.Errorf("--company-id and --media are required")
+		}
+
+		params := screenscraper.DownloadCompanyMediaParams{
+			CompanyID:    dlCompanyID,
+			Media:        dlMedia,
+			MaxWidth:     dlMaxWidth,
+			MaxHeight:    dlMaxHeight,
+			OutputFormat: dlFormat,
+		}
+
+		data, err := client.DownloadCompanyMedia(params)
+		if err != nil {
+			return err
+		}
+
+		// Check if it's a text response (NOMEDIA, CRCOK, etc.)
+		if len(data) < 100 && data[0] != 0xFF && data[0] != 0x89 { // not binary
+			fmt.Printf("Response: %s\n", string(data))
+			return nil
+		}
+
+		// Write to file or stdout
+		if dlOutput == "" || dlOutput == "-" {
+			_, err = os.Stdout.Write(data)
+			return err
+		}
+
+		if err := os.WriteFile(dlOutput, data, 0644); err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+
+		fmt.Printf("Saved to %s (%d bytes)\n", dlOutput, len(data))
+		return nil
+	},
+}
+
 func init() {
 	// Game media flags
 	downloadGameMediaCmd.Flags().StringVarP(&dlSystemID, "system", "s", "", "System ID (required)")
@@ -137,7 +231,25 @@ func init() {
 	downloadSystemMediaCmd.Flags().StringVar(&dlMaxHeight, "max-height", "", "Maximum height in pixels")
 	downloadSystemMediaCmd.Flags().StringVar(&dlFormat, "format", "", "Output format: png or jpg")
 
+	// Group media flags
+	downloadGroupMediaCmd.Flags().StringVarP(&dlGroupID, "group-id", "g", "", "Group ID (required)")
+	downloadGroupMediaCmd.Flags().StringVarP(&dlMedia, "media", "m", "", "Media identifier (required, e.g. 'logo-monochrome')")
+	downloadGroupMediaCmd.Flags().StringVarP(&dlOutput, "output", "o", "", "Output file path (default: stdout)")
+	downloadGroupMediaCmd.Flags().StringVar(&dlMaxWidth, "max-width", "", "Maximum width in pixels")
+	downloadGroupMediaCmd.Flags().StringVar(&dlMaxHeight, "max-height", "", "Maximum height in pixels")
+	downloadGroupMediaCmd.Flags().StringVar(&dlFormat, "format", "", "Output format: png or jpg")
+
+	// Company media flags
+	downloadCompanyMediaCmd.Flags().StringVarP(&dlCompanyID, "company-id", "c", "", "Company ID (required)")
+	downloadCompanyMediaCmd.Flags().StringVarP(&dlMedia, "media", "m", "", "Media identifier (required, e.g. 'logo-monochrome')")
+	downloadCompanyMediaCmd.Flags().StringVarP(&dlOutput, "output", "o", "", "Output file path (default: stdout)")
+	downloadCompanyMediaCmd.Flags().StringVar(&dlMaxWidth, "max-width", "", "Maximum width in pixels")
+	downloadCompanyMediaCmd.Flags().StringVar(&dlMaxHeight, "max-height", "", "Maximum height in pixels")
+	downloadCompanyMediaCmd.Flags().StringVar(&dlFormat, "format", "", "Output format: png or jpg")
+
 	downloadCmd.AddCommand(downloadGameMediaCmd)
 	downloadCmd.AddCommand(downloadSystemMediaCmd)
+	downloadCmd.AddCommand(downloadGroupMediaCmd)
+	downloadCmd.AddCommand(downloadCompanyMediaCmd)
 	rootCmd.AddCommand(downloadCmd)
 }

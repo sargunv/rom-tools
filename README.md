@@ -90,8 +90,8 @@ Use "screenscraper [command] --help" for more information about a command.
 - [ ] `mediaVideoSysteme.php` - Download system video media
 - [ ] `mediaVideoJeu.php` - Download game video media
 - [ ] `mediaManuelJeu.php` - Download game manuals (PDF)
-- [ ] `mediaGroup.php` - Download group image media (genres, modes, etc.)
-- [ ] `mediaCompagnie.php` - Download company image media
+- [x] `mediaGroup.php` - Download group image media (genres, modes, etc.)
+- [x] `mediaCompagnie.php` - Download company image media
 
 ### Community Features
 
