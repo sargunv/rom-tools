@@ -1,0 +1,27 @@
+[settings]
+experimental = true
+lockfile = true
+
+[tools]
+go = "latest"
+hk = "latest"
+pkl = "latest"
+prettier = "latest"
+
+[env]
+_.file = '.env'
+
+[tasks.setup]
+run = ["mise install", "hk install"]
+
+[tasks.build]
+run = "go build ./..."
+
+[tasks.test]
+run = "go test -v ./..."
+
+[tasks.screenscraper]
+run = "go run ./cmd/screenscraper"
+
+[tasks.clean]
+run = "go clean"
