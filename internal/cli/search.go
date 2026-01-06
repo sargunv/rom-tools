@@ -29,7 +29,7 @@ var searchCmd = &cobra.Command{
 			return err
 		}
 
-		formatted, err := json.MarshalIndent(resp, "", "  ")
+		formatted, err := json.MarshalIndent(resp.Response.Games, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to format JSON: %w", err)
 		}

@@ -23,7 +23,7 @@ var gameMediaTypesCmd = &cobra.Command{
 			return err
 		}
 
-		formatted, err := json.MarshalIndent(resp, "", "  ")
+		formatted, err := json.MarshalIndent(resp.Response.Medias, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to format JSON: %w", err)
 		}
@@ -43,7 +43,7 @@ var systemMediaTypesCmd = &cobra.Command{
 			return err
 		}
 
-		formatted, err := json.MarshalIndent(resp, "", "  ")
+		formatted, err := json.MarshalIndent(resp.Response.Medias, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to format JSON: %w", err)
 		}

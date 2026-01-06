@@ -63,7 +63,7 @@ Example:
 			return err
 		}
 
-		formatted, err := json.MarshalIndent(resp, "", "  ")
+		formatted, err := json.MarshalIndent(resp.Response.Game, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to format JSON: %w", err)
 		}
