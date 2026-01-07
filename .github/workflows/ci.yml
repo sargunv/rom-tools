@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v3
+
+      - name: Build
+        run: mise run build
+
+      - name: Fix
+        run: mise run fix
+
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Uncommitted changes detected after running 'mise run fix'. Please run it locally and commit the changes."
+            git diff
+            exit 1
+          fi
