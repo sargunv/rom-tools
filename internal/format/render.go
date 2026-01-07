@@ -288,6 +288,14 @@ func RenderClassificationsList(classifications map[string]screenscraper.Classifi
 	return RenderTable(headers, rows) + "\n"
 }
 
+// boolCheck returns a checkmark if the value is "1", otherwise empty string
+func boolCheck(value string) string {
+	if value == "1" {
+		return "✓"
+	}
+	return ""
+}
+
 // RenderMediaTypesList renders a list of media types
 func RenderMediaTypesList(medias map[string]screenscraper.MediaType, lang string) string {
 	if len(medias) == 0 {
@@ -307,7 +315,7 @@ func RenderMediaTypesList(medias map[string]screenscraper.MediaType, lang string
 		return entries[i].media.ID < entries[j].media.ID
 	})
 
-	headers := []string{"ID", "Short Name", "Name", "Category", "Type"}
+	headers := []string{"ID", "Short Name", "Name", "Format", "Region", "Support #", "Version"}
 	var rows [][]string
 
 	for _, entry := range entries {
@@ -316,8 +324,10 @@ func RenderMediaTypesList(medias map[string]screenscraper.MediaType, lang string
 			strconv.Itoa(m.ID),
 			m.ShortName,
 			m.Name,
-			m.Category,
-			m.Type,
+			m.FileFormat,
+			boolCheck(m.MultiRegions),
+			boolCheck(m.MultiSupports),
+			boolCheck(m.MultiVersions),
 		})
 	}
 
@@ -702,7 +712,7 @@ func RenderROMInfoTypesList(infoTypes map[string]screenscraper.ROMInfoType, lang
 		return entries[i].info.ID < entries[j].info.ID
 	})
 
-	headers := []string{"ID", "Short Name", "Name", "Category", "Type"}
+	headers := []string{"ID", "Short Name", "Name", "Type", "Region", "Version", "Multi"}
 	var rows [][]string
 
 	for _, entry := range entries {
@@ -711,8 +721,10 @@ func RenderROMInfoTypesList(infoTypes map[string]screenscraper.ROMInfoType, lang
 			strconv.Itoa(info.ID),
 			info.ShortName,
 			info.Name,
-			info.Category,
 			info.Type,
+			boolCheck(info.MultiRegions),
+			boolCheck(info.MultiVersions),
+			boolCheck(info.MultiChoix),
 		})
 	}
 
@@ -738,7 +750,7 @@ func RenderGameInfoTypesList(infoTypes map[string]screenscraper.GameInfoType, la
 		return entries[i].info.ID < entries[j].info.ID
 	})
 
-	headers := []string{"ID", "Short Name", "Name", "Category", "Type"}
+	headers := []string{"ID", "Short Name", "Name", "Type", "Region", "Version", "Multi"}
 	var rows [][]string
 
 	for _, entry := range entries {
@@ -747,8 +759,10 @@ func RenderGameInfoTypesList(infoTypes map[string]screenscraper.GameInfoType, la
 			strconv.Itoa(info.ID),
 			info.ShortName,
 			info.Name,
-			info.Category,
 			info.Type,
+			boolCheck(info.MultiRegions),
+			boolCheck(info.MultiVersions),
+			boolCheck(info.MultiChoix),
 		})
 	}
 
