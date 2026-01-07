@@ -16,19 +16,15 @@ Credentials are loaded from environment variables:
 ### Options
 
 ```
-      --dev-id string          Developer ID (or set SCREENSCRAPER_DEV_USER)
-      --dev-password string    Developer password (or set SCREENSCRAPER_DEV_PASSWORD)
-  -h, --help                   help for screenscraper
-      --json                   Output results as JSON
-      --locale string          Override locale for output (e.g., en, fr, de)
-      --user-id string         User ID (or set SCREENSCRAPER_ID)
-      --user-password string   User password (or set SCREENSCRAPER_PASSWORD)
+  -h, --help            help for screenscraper
+      --json            Output results as JSON
+      --locale string   Override locale for output (e.g., en, fr, de)
 ```
 
 ### SEE ALSO
 
+- [screenscraper detail](screenscraper_detail.md) - Get detailed information about a specific item
 - [screenscraper download](screenscraper_download.md) - Download media files
-- [screenscraper game](screenscraper_game.md) - Get game information
 - [screenscraper infra](screenscraper_infra.md) - Get infrastructure/server information
 - [screenscraper list](screenscraper_list.md) - List metadata and reference data
 - [screenscraper search](screenscraper_search.md) - Search for games by name

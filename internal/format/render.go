@@ -809,3 +809,362 @@ func RenderUserLevelsList(userLevels map[string]screenscraper.UserLevel, lang st
 
 	return RenderTable(headers, rows) + "\n"
 }
+
+// RenderSystemDetail renders detailed system information
+func RenderSystemDetail(system screenscraper.System, lang string) string {
+	var parts []string
+
+	// Title
+	name := GetLocalizedFromMap(lang, system.Names)
+	if name == "" {
+		name = fmt.Sprintf("System %d", system.ID)
+	}
+	parts = append(parts, TitleStyle.Render(fmt.Sprintf("%s %s", name, RenderID(strconv.Itoa(system.ID)))))
+
+	var kvPairs []KVPair
+
+	// Basic info
+	kvPairs = append(kvPairs, KVPair{"ID", strconv.Itoa(system.ID)})
+	if system.ParentID != 0 {
+		kvPairs = append(kvPairs, KVPair{"Parent ID", strconv.Itoa(system.ParentID)})
+	}
+	if system.Company != "" {
+		kvPairs = append(kvPairs, KVPair{"Company", system.Company})
+	}
+	if system.Type != "" {
+		kvPairs = append(kvPairs, KVPair{"Type", system.Type})
+	}
+	if system.StartDate != "" {
+		kvPairs = append(kvPairs, KVPair{"Start Date", system.StartDate})
+	}
+	if system.EndDate != "" {
+		kvPairs = append(kvPairs, KVPair{"End Date", system.EndDate})
+	}
+	if system.Extensions != "" {
+		kvPairs = append(kvPairs, KVPair{"Extensions", system.Extensions})
+	}
+	if system.ROMType != "" {
+		kvPairs = append(kvPairs, KVPair{"ROM Type", system.ROMType})
+	}
+	if system.SupportType != "" {
+		kvPairs = append(kvPairs, KVPair{"Support Type", system.SupportType})
+	}
+
+	if len(kvPairs) > 0 {
+		parts = append(parts, RenderKeyValue(kvPairs))
+	}
+
+	// Names section
+	if len(system.Names) > 0 {
+		parts = append(parts, "")
+		parts = append(parts, HeaderStyle.Render("Names:"))
+		var nameLines []string
+		for key, value := range system.Names {
+			if value != "" {
+				nameLines = append(nameLines, fmt.Sprintf("  %s: %s", key, value))
+			}
+		}
+		sort.Strings(nameLines)
+		parts = append(parts, strings.Join(nameLines, "\n"))
+	}
+
+	// Media section
+	if len(system.Medias) > 0 {
+		// Main media types to show for systems
+		mainTypes := map[string]bool{
+			"photo":        true,
+			"illustration": true,
+			"controller":   true,
+			"wheel":        true,
+			"video":        true,
+		}
+
+		// Group media by type, preserving order
+		type mediaEntry struct {
+			region string
+			url    string
+		}
+		mediaByType := make(map[string][]mediaEntry)
+		var typeOrder []string
+		for _, media := range system.Medias {
+			if media.URL == "" || !mainTypes[media.Type] {
+				continue
+			}
+			if _, seen := mediaByType[media.Type]; !seen {
+				typeOrder = append(typeOrder, media.Type)
+			}
+			region := media.Region
+			if region == "" {
+				region = "link"
+			}
+			mediaByType[media.Type] = append(mediaByType[media.Type], mediaEntry{region, media.URL})
+		}
+
+		if len(typeOrder) > 0 {
+			parts = append(parts, "")
+			parts = append(parts, HeaderStyle.Render("Media:"))
+			for _, mediaType := range typeOrder {
+				entries := mediaByType[mediaType]
+				var links []string
+				for _, entry := range entries {
+					links = append(links, Hyperlink(entry.url, entry.region))
+				}
+				parts = append(parts, "  "+LabelStyle.Render(mediaType)+": "+strings.Join(links, " "))
+			}
+		}
+	}
+
+	return strings.Join(parts, "\n") + "\n"
+}
+
+// RenderGenreDetail renders detailed genre information
+func RenderGenreDetail(genre screenscraper.Genre, lang string) string {
+	var parts []string
+
+	// Title
+	name := GetLocalizedName(lang, genre.NameDE, genre.NameEN, genre.NameES, genre.NameFR, genre.NameIT, genre.NamePT)
+	if name == "" {
+		name = genre.ShortName
+	}
+	if name == "" {
+		name = fmt.Sprintf("Genre %d", genre.ID)
+	}
+	parts = append(parts, TitleStyle.Render(fmt.Sprintf("%s %s", name, RenderID(strconv.Itoa(genre.ID)))))
+
+	var kvPairs []KVPair
+
+	// Basic info
+	kvPairs = append(kvPairs, KVPair{"ID", strconv.Itoa(genre.ID)})
+	if genre.ShortName != "" {
+		kvPairs = append(kvPairs, KVPair{"Short Name", genre.ShortName})
+	}
+	if genre.ParentID != "" && genre.ParentID != "0" {
+		kvPairs = append(kvPairs, KVPair{"Parent ID", genre.ParentID})
+	}
+
+	if len(kvPairs) > 0 {
+		parts = append(parts, RenderKeyValue(kvPairs))
+	}
+
+	// Names section
+	var namePairs []KVPair
+	if genre.NameDE != "" {
+		namePairs = append(namePairs, KVPair{"German (DE)", genre.NameDE})
+	}
+	if genre.NameEN != "" {
+		namePairs = append(namePairs, KVPair{"English (EN)", genre.NameEN})
+	}
+	if genre.NameES != "" {
+		namePairs = append(namePairs, KVPair{"Spanish (ES)", genre.NameES})
+	}
+	if genre.NameFR != "" {
+		namePairs = append(namePairs, KVPair{"French (FR)", genre.NameFR})
+	}
+	if genre.NameIT != "" {
+		namePairs = append(namePairs, KVPair{"Italian (IT)", genre.NameIT})
+	}
+	if genre.NamePT != "" {
+		namePairs = append(namePairs, KVPair{"Portuguese (PT)", genre.NamePT})
+	}
+
+	if len(namePairs) > 0 {
+		parts = append(parts, "")
+		parts = append(parts, HeaderStyle.Render("Names:"))
+		parts = append(parts, RenderKeyValue(namePairs))
+	}
+
+	// Media section
+	if len(genre.Medias) > 0 {
+		type mediaEntry struct {
+			region string
+			url    string
+		}
+		mediaByType := make(map[string][]mediaEntry)
+		var typeOrder []string
+		for _, media := range genre.Medias {
+			if media.URL == "" {
+				continue
+			}
+			if _, seen := mediaByType[media.Type]; !seen {
+				typeOrder = append(typeOrder, media.Type)
+			}
+			region := media.Region
+			if region == "" {
+				region = "link"
+			}
+			mediaByType[media.Type] = append(mediaByType[media.Type], mediaEntry{region, media.URL})
+		}
+
+		if len(typeOrder) > 0 {
+			parts = append(parts, "")
+			parts = append(parts, HeaderStyle.Render("Media:"))
+			for _, mediaType := range typeOrder {
+				entries := mediaByType[mediaType]
+				var links []string
+				for _, entry := range entries {
+					links = append(links, Hyperlink(entry.url, entry.region))
+				}
+				parts = append(parts, "  "+LabelStyle.Render(mediaType)+": "+strings.Join(links, " "))
+			}
+		}
+	}
+
+	return strings.Join(parts, "\n") + "\n"
+}
+
+// RenderFamilyDetail renders detailed family information
+func RenderFamilyDetail(family screenscraper.Family, lang string) string {
+	var parts []string
+
+	// Title
+	name := family.Name
+	if name == "" {
+		name = fmt.Sprintf("Family %d", family.ID)
+	}
+	parts = append(parts, TitleStyle.Render(fmt.Sprintf("%s %s", name, RenderID(strconv.Itoa(family.ID)))))
+
+	var kvPairs []KVPair
+
+	// Basic info
+	kvPairs = append(kvPairs, KVPair{"ID", strconv.Itoa(family.ID)})
+	if family.Name != "" {
+		kvPairs = append(kvPairs, KVPair{"Name", family.Name})
+	}
+
+	if len(kvPairs) > 0 {
+		parts = append(parts, RenderKeyValue(kvPairs))
+	}
+
+	// Media section
+	if len(family.Medias) > 0 {
+		type mediaEntry struct {
+			region string
+			url    string
+		}
+		mediaByType := make(map[string][]mediaEntry)
+		var typeOrder []string
+		for _, media := range family.Medias {
+			if media.URL == "" {
+				continue
+			}
+			if _, seen := mediaByType[media.Type]; !seen {
+				typeOrder = append(typeOrder, media.Type)
+			}
+			region := media.Region
+			if region == "" {
+				region = "link"
+			}
+			mediaByType[media.Type] = append(mediaByType[media.Type], mediaEntry{region, media.URL})
+		}
+
+		if len(typeOrder) > 0 {
+			parts = append(parts, "")
+			parts = append(parts, HeaderStyle.Render("Media:"))
+			for _, mediaType := range typeOrder {
+				entries := mediaByType[mediaType]
+				var links []string
+				for _, entry := range entries {
+					links = append(links, Hyperlink(entry.url, entry.region))
+				}
+				parts = append(parts, "  "+LabelStyle.Render(mediaType)+": "+strings.Join(links, " "))
+			}
+		}
+	}
+
+	return strings.Join(parts, "\n") + "\n"
+}
+
+// RenderClassificationDetail renders detailed classification information
+func RenderClassificationDetail(classification screenscraper.Classification, lang string) string {
+	var parts []string
+
+	// Title
+	name := GetLocalizedName(lang, classification.NameDE, classification.NameEN, classification.NameES, classification.NameFR, classification.NameIT, classification.NamePT)
+	if name == "" {
+		name = classification.ShortName
+	}
+	if name == "" {
+		name = fmt.Sprintf("Classification %d", classification.ID)
+	}
+	parts = append(parts, TitleStyle.Render(fmt.Sprintf("%s %s", name, RenderID(strconv.Itoa(classification.ID)))))
+
+	var kvPairs []KVPair
+
+	// Basic info
+	kvPairs = append(kvPairs, KVPair{"ID", strconv.Itoa(classification.ID)})
+	if classification.ShortName != "" {
+		kvPairs = append(kvPairs, KVPair{"Short Name", classification.ShortName})
+	}
+	if classification.ParentID != "" && classification.ParentID != "0" {
+		kvPairs = append(kvPairs, KVPair{"Parent ID", classification.ParentID})
+	}
+
+	if len(kvPairs) > 0 {
+		parts = append(parts, RenderKeyValue(kvPairs))
+	}
+
+	// Names section
+	var namePairs []KVPair
+	if classification.NameDE != "" {
+		namePairs = append(namePairs, KVPair{"German (DE)", classification.NameDE})
+	}
+	if classification.NameEN != "" {
+		namePairs = append(namePairs, KVPair{"English (EN)", classification.NameEN})
+	}
+	if classification.NameES != "" {
+		namePairs = append(namePairs, KVPair{"Spanish (ES)", classification.NameES})
+	}
+	if classification.NameFR != "" {
+		namePairs = append(namePairs, KVPair{"French (FR)", classification.NameFR})
+	}
+	if classification.NameIT != "" {
+		namePairs = append(namePairs, KVPair{"Italian (IT)", classification.NameIT})
+	}
+	if classification.NamePT != "" {
+		namePairs = append(namePairs, KVPair{"Portuguese (PT)", classification.NamePT})
+	}
+
+	if len(namePairs) > 0 {
+		parts = append(parts, "")
+		parts = append(parts, HeaderStyle.Render("Names:"))
+		parts = append(parts, RenderKeyValue(namePairs))
+	}
+
+	// Media section
+	if len(classification.Medias) > 0 {
+		type mediaEntry struct {
+			region string
+			url    string
+		}
+		mediaByType := make(map[string][]mediaEntry)
+		var typeOrder []string
+		for _, media := range classification.Medias {
+			if media.URL == "" {
+				continue
+			}
+			if _, seen := mediaByType[media.Type]; !seen {
+				typeOrder = append(typeOrder, media.Type)
+			}
+			region := media.Region
+			if region == "" {
+				region = "link"
+			}
+			mediaByType[media.Type] = append(mediaByType[media.Type], mediaEntry{region, media.URL})
+		}
+
+		if len(typeOrder) > 0 {
+			parts = append(parts, "")
+			parts = append(parts, HeaderStyle.Render("Media:"))
+			for _, mediaType := range typeOrder {
+				entries := mediaByType[mediaType]
+				var links []string
+				for _, entry := range entries {
+					links = append(links, Hyperlink(entry.url, entry.region))
+				}
+				parts = append(parts, "  "+LabelStyle.Render(mediaType)+": "+strings.Join(links, " "))
+			}
+		}
+	}
+
+	return strings.Join(parts, "\n") + "\n"
+}

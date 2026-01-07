@@ -34,7 +34,7 @@ You can lookup by:
   screenscraper game --crc=50ABC90A --size=749652 --system=1 --rom-type=rom --name="Sonic 2.zip"
   
   # Lookup by game ID
-  screenscraper game --game-id=3`,
+  screenscraper game --id=3`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		params := screenscraper.GameInfoParams{
 			CRC:       gameCRC,
@@ -53,7 +53,7 @@ You can lookup by:
 		hasGameID := gameID != ""
 
 		if !hasHash && !hasGameID {
-			return fmt.Errorf("must provide either ROM hash (--crc/--md5/--sha1) or --game-id")
+			return fmt.Errorf("must provide either ROM hash (--crc/--md5/--sha1) or --id")
 		}
 
 		if hasHash && gameSystemID == "" {
@@ -88,8 +88,8 @@ func init() {
 	gameCmd.Flags().StringVarP(&gameSystemID, "system", "s", "", "System ID (required for hash lookup)")
 	gameCmd.Flags().StringVar(&gameROMType, "rom-type", "rom", "ROM type: rom, iso, or folder")
 	gameCmd.Flags().StringVarP(&gameROMName, "name", "n", "", "ROM filename")
-	gameCmd.Flags().StringVar(&gameID, "game-id", "", "Game ID (alternative to hash lookup)")
+	gameCmd.Flags().StringVar(&gameID, "id", "", "Game ID (alternative to hash lookup)")
 	gameCmd.Flags().StringVar(&gameSerial, "serial", "", "Serial number (optional)")
 
-	rootCmd.AddCommand(gameCmd)
+	detailCmd.AddCommand(gameCmd)
 }

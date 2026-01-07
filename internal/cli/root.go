@@ -31,7 +31,7 @@ Credentials are loaded from environment variables:
 - SCREENSCRAPER_ID           - User ID (optional)
 - SCREENSCRAPER_PASSWORD     - User password (optional)`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Initialize client with credentials from environment or flags
+		// Initialize client with credentials from environment variables
 		if devID == "" {
 			devID = os.Getenv("SCREENSCRAPER_DEV_USER")
 		}
@@ -56,10 +56,6 @@ Credentials are loaded from environment variables:
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&devID, "dev-id", "", "Developer ID (or set SCREENSCRAPER_DEV_USER)")
-	rootCmd.PersistentFlags().StringVar(&devPassword, "dev-password", "", "Developer password (or set SCREENSCRAPER_DEV_PASSWORD)")
-	rootCmd.PersistentFlags().StringVar(&ssID, "user-id", "", "User ID (or set SCREENSCRAPER_ID)")
-	rootCmd.PersistentFlags().StringVar(&ssPassword, "user-password", "", "User password (or set SCREENSCRAPER_PASSWORD)")
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
 	rootCmd.PersistentFlags().StringVar(&locale, "locale", "", "Override locale for output (e.g., en, fr, de)")
 }

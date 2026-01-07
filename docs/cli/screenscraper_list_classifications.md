@@ -19,12 +19,8 @@ screenscraper list classifications [flags]
 ### Options inherited from parent commands
 
 ```
-      --dev-id string          Developer ID (or set SCREENSCRAPER_DEV_USER)
-      --dev-password string    Developer password (or set SCREENSCRAPER_DEV_PASSWORD)
-      --json                   Output results as JSON
-      --locale string          Override locale for output (e.g., en, fr, de)
-      --user-id string         User ID (or set SCREENSCRAPER_ID)
-      --user-password string   User password (or set SCREENSCRAPER_PASSWORD)
+      --json            Output results as JSON
+      --locale string   Override locale for output (e.g., en, fr, de)
 ```
 
 ### SEE ALSO

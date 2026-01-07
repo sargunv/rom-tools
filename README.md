@@ -14,14 +14,13 @@ Or use the library in your Go project:
 
 ## CLI Usage
 
-See the [CLI documentation](docs/cli/) for complete usage information.
+See the [CLI documentation](docs/cli/screenscraper.md) for complete usage information.
 
 Quick start:
 
-- [Main CLI documentation](docs/cli/screenscraper.md)
-- [Download media files](docs/cli/screenscraper_download.md)
-- [Get game information](docs/cli/screenscraper_game.md)
 - [Search for games](docs/cli/screenscraper_search.md)
+- [Get game information](docs/cli/screenscraper_detail_game.md)
+- [Download media files](docs/cli/screenscraper_download.md)
 - [List metadata and reference data](docs/cli/screenscraper_list.md)
 
 ## Library Usage
@@ -62,13 +61,13 @@ Quick start:
 
 ### Media Downloads
 
-- [x] `mediaJeu.php` - Download game image media
-- [x] `mediaSysteme.php` - Download system image media
-- [ ] `mediaVideoSysteme.php` - Download system video media
-- [ ] `mediaVideoJeu.php` - Download game video media
-- [ ] `mediaManuelJeu.php` - Download game manuals (PDF)
-- [x] `mediaGroup.php` - Download group image media (genres, modes, etc.)
-- [x] `mediaCompagnie.php` - Download company image media
+- [x] `mediaJeu.php` - Download game media
+- [x] `mediaSysteme.php` - Download system media
+- [ ] ~~`mediaVideoSysteme.php` - Download system video media~~ (`mediaSysteme.php` seems to work for videos as well)
+- [ ] ~~`mediaVideoJeu.php` - Download game video media~~ (`mediaJeu.php` seems to work for videos as well)
+- [ ] ~~`mediaManuelJeu.php` - Download game manuals (PDF)~~ (`mediaJeu.php` seems to work for manuals as well)
+- [x] `mediaGroup.php` - Download group media (genres, modes, etc.)
+- [x] `mediaCompagnie.php` - Download company media
 
 ### Community Features
 
