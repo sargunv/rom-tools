@@ -6,11 +6,11 @@ A Go client library and CLI for Screenscraper, a community platform for retro vi
 
 Install the CLI:
 
-    go install sargunv/screenscraper-go/cmd/screenscraper@latest
+    go install github.com/sargunv/screenscraper-go/cmd/screenscraper@latest
 
 Or use the library in your Go project:
 
-    go get sargunv/screenscraper-go
+    go get github.com/sargunv/screenscraper-go
 
 ## CLI Usage
 
@@ -25,7 +25,7 @@ Quick start:
 
 ## Library Usage
 
-    import "sargunv/screenscraper-go/client"
+    import "github.com/sargunv/screenscraper-go/client"
 
     c := client.NewClient(devID, devPassword, "my-app/1.0", ssID, ssPassword)
     game, err := client.GetGame(client.GetGameParams{GameID: "12345"})

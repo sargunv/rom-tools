@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/sargunv/screenscraper-go/internal/cli"
 	"os"
-	"sargunv/screenscraper-go/internal/cli"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	screenscraper "sargunv/screenscraper-go/client"
+	screenscraper "github.com/sargunv/screenscraper-go/client"
 
 	"github.com/spf13/cobra"
 )

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	screenscraper "sargunv/screenscraper-go/client"
+	screenscraper "github.com/sargunv/screenscraper-go/client"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"

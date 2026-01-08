@@ -32,4 +32,5 @@ screenscraper detail system [flags]
 
 ### SEE ALSO
 
-- [screenscraper detail](screenscraper_detail.md) - Get detailed information about a specific item
+* [screenscraper detail](screenscraper_detail.md)	 - Get detailed information about a specific item
+

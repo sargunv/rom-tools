@@ -25,4 +25,5 @@ screenscraper list media-types systems [flags]
 
 ### SEE ALSO
 
-- [screenscraper list media-types](screenscraper_list_media-types.md) - Get list of media types
+* [screenscraper list media-types](screenscraper_list_media-types.md)	 - Get list of media types
+

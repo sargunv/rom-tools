@@ -1,4 +1,4 @@
-module sargunv/screenscraper-go
+module github.com/sargunv/screenscraper-go
 
 go 1.25
 

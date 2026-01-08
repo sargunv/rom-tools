@@ -21,6 +21,7 @@ Retrieves the list of available media types for games and systems
 
 ### SEE ALSO
 
-- [screenscraper list](screenscraper_list.md) - List metadata and reference data
-- [screenscraper list media-types games](screenscraper_list_media-types_games.md) - Get list of game media types
-- [screenscraper list media-types systems](screenscraper_list_media-types_systems.md) - Get list of system media types
+* [screenscraper list](screenscraper_list.md)	 - List metadata and reference data
+* [screenscraper list media-types games](screenscraper_list_media-types_games.md)	 - Get list of game media types
+* [screenscraper list media-types systems](screenscraper_list_media-types_systems.md)	 - Get list of system media types
+

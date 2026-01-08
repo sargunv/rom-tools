@@ -15,7 +15,7 @@ screenscraper download game [flags]
 ```
   # Download game box art
   screenscraper download game --system=1 --game-id=3 --media="box-2D(us)" --output=box.png
-
+  
   # Download game wheel logo
   screenscraper download game -s 1 -g 3 -m "wheel-hd(eu)" -o logo.png
 ```
@@ -42,4 +42,5 @@ screenscraper download game [flags]
 
 ### SEE ALSO
 
-- [screenscraper download](screenscraper_download.md) - Download media files
+* [screenscraper download](screenscraper_download.md)	 - Download media files
+

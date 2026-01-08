@@ -26,4 +26,5 @@ screenscraper search <query> [flags]
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+

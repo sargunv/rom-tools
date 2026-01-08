@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	screenscraper "sargunv/screenscraper-go/client"
+	screenscraper "github.com/sargunv/screenscraper-go/client"
 
 	"github.com/spf13/cobra"
 )

@@ -6,7 +6,8 @@ Submit a rating for a game
 
 Submit a rating (1-20) for a game on ScreenScraper.
 
-This command requires user credentials (SCREENSCRAPER_ID and SCREENSCRAPER_PASSWORD). Your rating will be associated with your ScreenScraper account.
+This command requires user credentials (SCREENSCRAPER_ID and SCREENSCRAPER_PASSWORD).
+Your rating will be associated with your ScreenScraper account.
 
 ```
 screenscraper rate [flags]
@@ -36,4 +37,5 @@ screenscraper rate [flags]
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+

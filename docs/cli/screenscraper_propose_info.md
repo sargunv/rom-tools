@@ -6,9 +6,12 @@ Submit a text info proposal
 
 Submit a text info proposal for a game or ROM.
 
-Game info types (--game-id): name, editeur, developpeur, players, score, rating, genres, datessortie, rotation, resolution, modes, familles, numero, styles, themes, description
+Game info types (--game-id): name, editeur, developpeur, players, score,
+rating, genres, datessortie, rotation, resolution, modes, familles, numero,
+styles, themes, description
 
-ROM info types (--rom-id): developpeur, editeur, datessortie, players, regions, langues, clonetype, hacktype, friendly, serial, description
+ROM info types (--rom-id): developpeur, editeur, datessortie, players,
+regions, langues, clonetype, hacktype, friendly, serial, description
 
 ```
 screenscraper propose info [flags]
@@ -50,4 +53,5 @@ screenscraper propose info [flags]
 
 ### SEE ALSO
 
-- [screenscraper propose](screenscraper_propose.md) - Submit proposals to ScreenScraper
+* [screenscraper propose](screenscraper_propose.md)	 - Submit proposals to ScreenScraper
+

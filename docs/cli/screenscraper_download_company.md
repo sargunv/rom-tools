@@ -38,4 +38,5 @@ screenscraper download company [flags]
 
 ### SEE ALSO
 
-- [screenscraper download](screenscraper_download.md) - Download media files
+* [screenscraper download](screenscraper_download.md)	 - Download media files
+

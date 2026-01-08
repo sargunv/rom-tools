@@ -21,6 +21,7 @@ Commands to retrieve status information about the API infrastructure and user ac
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
-- [screenscraper status infra](screenscraper_status_infra.md) - Get infrastructure/server information
-- [screenscraper status user](screenscraper_status_user.md) - Get user information and quotas
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+* [screenscraper status infra](screenscraper_status_infra.md)	 - Get infrastructure/server information
+* [screenscraper status user](screenscraper_status_user.md)	 - Get user information and quotas
+

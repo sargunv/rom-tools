@@ -25,4 +25,5 @@ screenscraper list languages [flags]
 
 ### SEE ALSO
 
-- [screenscraper list](screenscraper_list.md) - List metadata and reference data
+* [screenscraper list](screenscraper_list.md)	 - List metadata and reference data
+

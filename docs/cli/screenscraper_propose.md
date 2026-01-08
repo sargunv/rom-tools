@@ -6,7 +6,8 @@ Submit proposals to ScreenScraper
 
 Submit info or media proposals to contribute to the ScreenScraper database.
 
-This command requires user credentials (SCREENSCRAPER_ID and SCREENSCRAPER_PASSWORD). Your proposals will be associated with your ScreenScraper account and reviewed by moderators.
+This command requires user credentials (SCREENSCRAPER_ID and SCREENSCRAPER_PASSWORD).
+Your proposals will be associated with your ScreenScraper account and reviewed by moderators.
 
 ### Options
 
@@ -23,6 +24,7 @@ This command requires user credentials (SCREENSCRAPER_ID and SCREENSCRAPER_PASSW
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
-- [screenscraper propose info](screenscraper_propose_info.md) - Submit a text info proposal
-- [screenscraper propose media](screenscraper_propose_media.md) - Submit a media proposal
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+* [screenscraper propose info](screenscraper_propose_info.md)	 - Submit a text info proposal
+* [screenscraper propose media](screenscraper_propose_media.md)	 - Submit a media proposal
+

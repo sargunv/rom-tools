@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"sargunv/screenscraper-go/internal/cli"
+	"github.com/sargunv/screenscraper-go/internal/cli"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"

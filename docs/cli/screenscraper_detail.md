@@ -21,6 +21,7 @@ Commands to retrieve detailed information about systems and games.
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
-- [screenscraper detail game](screenscraper_detail_game.md) - Get game information
-- [screenscraper detail system](screenscraper_detail_system.md) - Get detailed system information
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+* [screenscraper detail game](screenscraper_detail_game.md)	 - Get game information
+* [screenscraper detail system](screenscraper_detail_system.md)	 - Get detailed system information
+

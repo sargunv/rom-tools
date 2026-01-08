@@ -21,8 +21,9 @@ Download game or system media files (images, videos, etc.)
 
 ### SEE ALSO
 
-- [screenscraper](screenscraper.md) - Screenscraper CLI client
-- [screenscraper download company](screenscraper_download_company.md) - Download company media
-- [screenscraper download game](screenscraper_download_game.md) - Download game media
-- [screenscraper download group](screenscraper_download_group.md) - Download group media
-- [screenscraper download system](screenscraper_download_system.md) - Download system media
+* [screenscraper](screenscraper.md)	 - Screenscraper CLI client
+* [screenscraper download company](screenscraper_download_company.md)	 - Download company media
+* [screenscraper download game](screenscraper_download_game.md)	 - Download game media
+* [screenscraper download group](screenscraper_download_group.md)	 - Download group media
+* [screenscraper download system](screenscraper_download_system.md)	 - Download system media
+

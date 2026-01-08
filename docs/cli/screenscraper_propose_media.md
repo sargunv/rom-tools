@@ -6,9 +6,14 @@ Submit a media proposal
 
 Submit a media proposal for a game or ROM.
 
-Media types: sstitle, ss, fanart, video, overlay, steamgrid, wheel, wheel-hd, marquee, screenmarquee, box-2D, box-2D-side, box-2D-back, box-texture, manuel, flyer, maps, figurine, support-texture, box-scan, support-scan, bezel-4-3, bezel-4-3-v, bezel-4-3-cocktail, bezel-16-9, bezel-16-9-v, bezel-16-9-cocktail, wheel-tarcisios, videotable, videotable4k, themehs, themehb
+Media types: sstitle, ss, fanart, video, overlay, steamgrid, wheel, wheel-hd,
+marquee, screenmarquee, box-2D, box-2D-side, box-2D-back, box-texture, manuel,
+flyer, maps, figurine, support-texture, box-scan, support-scan, bezel-4-3,
+bezel-4-3-v, bezel-4-3-cocktail, bezel-16-9, bezel-16-9-v, bezel-16-9-cocktail,
+wheel-tarcisios, videotable, videotable4k, themehs, themehb
 
-You can provide the media either as a file (--file) or URL (--url). Use --file=- to read from stdin.
+You can provide the media either as a file (--file) or URL (--url).
+Use --file=- to read from stdin.
 
 ```
 screenscraper propose media [flags]
@@ -51,4 +56,5 @@ screenscraper propose media [flags]
 
 ### SEE ALSO
 
-- [screenscraper propose](screenscraper_propose.md) - Submit proposals to ScreenScraper
+* [screenscraper propose](screenscraper_propose.md)	 - Submit proposals to ScreenScraper
+

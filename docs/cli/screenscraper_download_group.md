@@ -38,4 +38,5 @@ screenscraper download group [flags]
 
 ### SEE ALSO
 
-- [screenscraper download](screenscraper_download.md) - Download media files
+* [screenscraper download](screenscraper_download.md)	 - Download media files
+
