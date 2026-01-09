@@ -74,12 +74,20 @@ const (
 	// calculates full hashes for loose files.
 	HashModeDefault HashMode = iota
 
-	// HashModeFast skips hash calculation entirely.
+	// HashModeFast skips hash calculation for large files, but still calculates
+	// hashes for small files (below FastModeSmallFileThreshold).
 	HashModeFast
 
 	// HashModeSlow calculates full hashes even when fast methods are available
 	// (e.g., decompresses ZIP files to calculate SHA1/MD5).
 	HashModeSlow
+)
+
+const (
+	// FastModeSmallFileThreshold is the size threshold below which fast mode
+	// will still calculate hashes. Files at or above this size skip hash calculation.
+	// 65 MiB covers most cartridge ROMs (GBA, SNES, NES, etc.) but skips large disc images.
+	FastModeSmallFileThreshold = 65 * 1024 * 1024 // 65 MiB
 )
 
 // Options controls ROM identification behavior.

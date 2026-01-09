@@ -33,3 +33,10 @@ run = "hk run check"
 [tasks.fix]
 description = "Run all fixers (format, generate docs, etc.)"
 run = "hk run fix"
+
+[tasks.gen-docs]
+run = [
+    "rm -r docs",
+    "go run ./cmd/gen-docs",
+    "prettier --log-level silent --write docs/**/*.md",
+]

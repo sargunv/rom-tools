@@ -1,18 +1,10 @@
 amends "package://github.com/jdx/hk/releases/download/v1.20.0/hk@1.20.0#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v1.20.0/hk@1.20.0#/Builtins.pkl"
 
-local gen_docs = new Step {
-    fix = "go run ./cmd/gen-docs"
-    glob = List("internal/cli/**/*.go", "cmd/gen-docs/**/*.go", "docs/**/*.md")
-}
-
 local linters = new Mapping<String, Step> {
     ["go-fmt"] = Builtins.go_fmt
     ["gomod-tidy"] = Builtins.gomod_tidy
-    ["gen-docs"] = gen_docs
-    ["prettier"] = (Builtins.prettier) {
-        depends = List("gen-docs")
-    }
+    ["prettier"] = Builtins.prettier
 }
 
 hooks {

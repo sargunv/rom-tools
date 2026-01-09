@@ -18,5 +18,4 @@ rom-tools scrape [flags]
 
 ### SEE ALSO
 
-* [rom-tools](rom-tools.md)	 - ROM management and metadata tools
-
+- [rom-tools](rom-tools.md) - ROM management and metadata tools

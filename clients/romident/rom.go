@@ -44,6 +44,7 @@ func identifyFolder(path string, opts Options) (*ROM, error) {
 
 	files := make(Files)
 	detector := format.NewDetector()
+	var romIdent *GameIdent
 
 	for _, relPath := range fileList {
 		fullPath := filepath.Join(path, relPath)
@@ -58,6 +59,15 @@ func identifyFolder(path string, opts Options) (*ROM, error) {
 			return nil, fmt.Errorf("failed to identify %s: %w", relPath, err)
 		}
 
+		// Try to extract identification from identifiable formats
+		if romIdent == nil && romFile.Format == FormatXISO {
+			f, err := os.Open(fullPath)
+			if err == nil {
+				romIdent = identifyXISO(f, info.Size())
+				f.Close()
+			}
+		}
+
 		files[relPath] = *romFile
 	}
 
@@ -65,7 +75,7 @@ func identifyFolder(path string, opts Options) (*ROM, error) {
 		Path:  path,
 		Type:  ROMTypeFolder,
 		Files: files,
-		Ident: nil, // TODO: identification
+		Ident: romIdent,
 	}, nil
 }
 
@@ -128,6 +138,7 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 	files := make(Files)
 	detector := format.NewDetector()
+	var romIdent *GameIdent
 
 	for _, zipFile := range archive.Files {
 		// Always extract CRC32 from ZIP metadata (fast, no decompression)
@@ -135,8 +146,31 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 			NewHash(HashCRC32, fmt.Sprintf("%08x", zipFile.CRC32), "zip-metadata"),
 		}
 
-		// Slow mode: also decompress and calculate full hashes
+		// Default: use extension-based format detection (no decompression)
+		detectedFormat := detector.DetectByExtension(zipFile.Name)
+
+		// Slow mode: detect format using magic bytes and extract identification
+		// This requires partial decompression (header portions)
 		if opts.HashMode == HashModeSlow {
+			entryReader, err := archive.OpenFileAt(zipFile.Name)
+			if err == nil {
+				magicFormat, _ := detector.DetectByMagic(entryReader, entryReader.Size())
+				if magicFormat != format.Unknown {
+					detectedFormat = magicFormat
+				}
+
+				// Try to extract identification from identifiable formats
+				if romIdent == nil {
+					if detectedFormat == format.XISO {
+						romIdent = identifyXISO(entryReader, entryReader.Size())
+					}
+					// Future: CHD identification, etc.
+				}
+
+				entryReader.Close()
+			}
+
+			// Slow mode: also decompress and calculate full hashes
 			reader, err := archive.OpenFile(zipFile.Name)
 			if err == nil {
 				if calculated, err := CalculateHashes(reader); err == nil {
@@ -149,7 +183,7 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 		files[zipFile.Name] = ROMFile{
 			Size:   zipFile.Size,
-			Format: formatToRomidentFormat(detector.DetectByExtension(zipFile.Name)),
+			Format: formatToRomidentFormat(detectedFormat),
 			Hashes: hashes,
 		}
 	}
@@ -158,7 +192,7 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 		Path:  path,
 		Type:  ROMTypeZIP,
 		Files: files,
-		Ident: nil, // TODO: identification
+		Ident: romIdent,
 	}, nil
 }
 
@@ -193,8 +227,8 @@ func identifySingleFile(path string, size int64, detector *format.Detector, opts
 		return romFile, nil
 	}
 
-	// Fast mode: skip calculating hashes for loose files
-	if opts.HashMode == HashModeFast {
+	// Fast mode: skip calculating hashes for large files, but allow small files
+	if opts.HashMode == HashModeFast && size >= FastModeSmallFileThreshold {
 		return romFile, nil
 	}
 
