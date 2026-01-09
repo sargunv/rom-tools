@@ -1,4 +1,4 @@
-module github.com/sargunv/screenscraper-go
+module github.com/sargunv/rom-tools
 
 go 1.25
 
