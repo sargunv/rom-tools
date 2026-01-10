@@ -8,11 +8,16 @@ Extract hashes and game identification data from ROM files.
 
 Supports:
 
-- Hashing files: calculates SHA1, MD5, CRC32 (unless in fast mode).
-- CHD files: extracts SHA1 hashes from header (fast, no decompression)
-- ZIP archives: extracts CRC32 from metadata (fast, no decompression). If in slow mode, also identifies files within the ZIP.
-- Folders: identifies files within.
-- XISO and XBE files: identifies Xbox game information from the XBE header.
+- Platform specific ROMs: identifies game information from the ROM header, depending on the format. Supported ROM formats:
+  - Game Boy / Color: q.g, .gbc
+  - Game Boy Advance: .gba
+  - Nintendo 64: .z64, .v64, .n64
+  - Mega Drive / Genesis: .md, .gen, .smd
+  - Xbox: .xiso, .xiso.iso, and .xbe
+- .chd discs: extracts SHA1 hashes from header (fast, no decompression)
+- .zip archives: extracts CRC32 from metadata (fast, no decompression). If in slow mode, also identifies files within the ZIP.
+- all files: calculates SHA1, MD5, CRC32 (unless in fast mode).
+- all folders: identifies files within.
 
 ```
 rom-tools identify <file>... [flags]
