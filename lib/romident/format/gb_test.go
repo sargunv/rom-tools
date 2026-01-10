@@ -65,6 +65,39 @@ func TestIsGBROM(t *testing.T) {
 	}
 }
 
+func TestParseGBC(t *testing.T) {
+	gbcPath := filepath.Join(testutil.ROMsPath(t), "JUMPMAN86.GBC")
+
+	file, err := os.Open(gbcPath)
+	if err != nil {
+		t.Fatalf("Failed to open GBC file: %v", err)
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		t.Fatalf("Failed to stat GBC file: %v", err)
+	}
+
+	info, err := ParseGB(file, stat.Size())
+	if err != nil {
+		t.Fatalf("ParseGB() error = %v", err)
+	}
+
+	if info.Title != "JUMPMAN 86" {
+		t.Errorf("Expected title 'JUMPMAN 86', got %q", info.Title)
+	}
+
+	if info.Platform != GBPlatformGBC {
+		t.Errorf("Expected platform %q, got %q", GBPlatformGBC, info.Platform)
+	}
+
+	// Should be GBC-only (0xC0) or GBC-compatible (0x80)
+	if info.CGBFlag != CGBFlagSupported && info.CGBFlag != CGBFlagRequired {
+		t.Errorf("Expected CGB flag 0x80 or 0xC0, got 0x%02X", info.CGBFlag)
+	}
+}
+
 func TestIsGBROM_NotGB(t *testing.T) {
 	// Test that a GBA ROM is not detected as GB
 	gbaPath := filepath.Join(testutil.ROMsPath(t), "AGB_Rogue.gba")
