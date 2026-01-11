@@ -36,28 +36,31 @@ const (
 type Region string
 
 const (
-	RegionJP      Region = "JP"      // Japan
-	RegionUS      Region = "US"      // USA
-	RegionNA      Region = "NA"      // North America
-	RegionEU      Region = "EU"      // Europe
-	RegionFR      Region = "FR"      // France
-	RegionES      Region = "ES"      // Spain
-	RegionDE      Region = "DE"      // Germany
-	RegionIT      Region = "IT"      // Italy
-	RegionAU      Region = "AU"      // Australia
-	RegionBR      Region = "BR"      // Brazil
-	RegionCN      Region = "CN"      // China
-	RegionNL      Region = "NL"      // Netherlands
-	RegionKR      Region = "KR"      // Korea
-	RegionCA      Region = "CA"      // Canada
-	RegionSE      Region = "SE"      // Sweden
-	RegionFI      Region = "FI"      // Finland
-	RegionDK      Region = "DK"      // Denmark
-	RegionNordic  Region = "Nordic"  // Scandinavia (combined)
-	RegionNTSC    Region = "NTSC"    // NTSC region (generic)
-	RegionPAL     Region = "PAL"     // PAL region (generic)
-	RegionWorld   Region = "World"   // Region-free/worldwide
-	RegionUnknown Region = "Unknown" // Fallback for unrecognized codes
+	RegionJP Region = "JP" // Japan
+	RegionUS Region = "US" // USA
+	RegionFR Region = "FR" // France
+	RegionES Region = "ES" // Spain
+	RegionDE Region = "DE" // Germany
+	RegionIT Region = "IT" // Italy
+	RegionAU Region = "AU" // Australia
+	RegionBR Region = "BR" // Brazil
+	RegionCN Region = "CN" // China
+	RegionNL Region = "NL" // Netherlands
+	RegionKR Region = "KR" // Korea
+	RegionCA Region = "CA" // Canada
+	RegionSE Region = "SE" // Sweden
+	RegionFI Region = "FI" // Finland
+	RegionDK Region = "DK" // Denmark
+
+	RegionNA     Region = "NA"     // North America
+	RegionEU     Region = "EU"     // Europe
+	RegionNordic Region = "Nordic" // Scandinavia
+
+	RegionNTSC Region = "NTSC"
+	RegionPAL  Region = "PAL"
+
+	RegionWorld   Region = "World"
+	RegionUnknown Region = "Unknown"
 )
 
 // Platform represents a gaming platform.

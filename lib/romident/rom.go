@@ -7,7 +7,17 @@ import (
 	"path/filepath"
 
 	"github.com/sargunv/rom-tools/lib/romident/container"
-	"github.com/sargunv/rom-tools/lib/romident/format"
+	"github.com/sargunv/rom-tools/lib/romident/container/folder"
+	"github.com/sargunv/rom-tools/lib/romident/container/zip"
+	"github.com/sargunv/rom-tools/lib/romident/disc/chd"
+	"github.com/sargunv/rom-tools/lib/romident/game/gb"
+	"github.com/sargunv/rom-tools/lib/romident/game/gba"
+	"github.com/sargunv/rom-tools/lib/romident/game/md"
+	"github.com/sargunv/rom-tools/lib/romident/game/n64"
+	"github.com/sargunv/rom-tools/lib/romident/game/nds"
+	"github.com/sargunv/rom-tools/lib/romident/game/nes"
+	"github.com/sargunv/rom-tools/lib/romident/game/snes"
+	"github.com/sargunv/rom-tools/lib/romident/game/xbox"
 )
 
 // IdentifyROM identifies a ROM file, ZIP archive, or folder.
@@ -38,7 +48,7 @@ func identifyContainer(c container.Container, containerType ROMType, containerPa
 	}
 
 	files := make(Files)
-	detector := format.NewDetector()
+	detector := NewDetector()
 	var romIdent *GameIdent
 
 	for _, entry := range entries {
@@ -90,7 +100,7 @@ func identifyContainer(c container.Container, containerType ROMType, containerPa
 }
 
 func identifyFolder(path string, opts Options) (*ROM, error) {
-	c, err := container.NewFolderContainer(path)
+	c, err := folder.NewFolderContainer(path)
 	if err != nil {
 		return nil, err
 	}
@@ -108,14 +118,14 @@ func identifyFile(path string, size int64, opts Options) (*ROM, error) {
 	defer f.Close()
 
 	// Detect format
-	detector := format.NewDetector()
+	detector := NewDetector()
 	detectedFormat, err := detector.Detect(f, size, filepath.Base(path))
 	if err != nil {
 		return nil, fmt.Errorf("failed to detect format: %w", err)
 	}
 
 	// Handle ZIP specially
-	if detectedFormat == format.ZIP {
+	if detectedFormat == FormatZIP {
 		return identifyZIP(path, opts)
 	}
 
@@ -138,7 +148,7 @@ func identifyFile(path string, size int64, opts Options) (*ROM, error) {
 }
 
 func identifyZIP(path string, opts Options) (*ROM, error) {
-	handler := container.NewZIPHandler()
+	handler := zip.NewZIPHandler()
 
 	archive, err := handler.Open(path)
 	if err != nil {
@@ -158,13 +168,13 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 	// Fast/default mode: use ZIP metadata only (no decompression)
 	files := make(Files)
-	detector := format.NewDetector()
+	detector := NewDetector()
 
 	for _, entry := range entries {
 		// Use extension-based format detection (no decompression)
 		// In fast mode, we can't verify with magic, so only trust unambiguous extensions
 		candidates := detector.CandidatesByExtension(entry.Name)
-		detectedFormat := format.Unknown
+		detectedFormat := FormatUnknown
 		if len(candidates) == 1 {
 			detectedFormat = candidates[0]
 		}
@@ -178,7 +188,7 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 		files[entry.Name] = ROMFile{
 			Size:   entry.Size,
-			Format: formatToRomidentFormat(detectedFormat),
+			Format: detectedFormat,
 			Hashes: hashes,
 		}
 	}
@@ -193,7 +203,7 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 // identifySingleReader identifies a file from a ReaderAtSeekCloser (works for any container).
 // Returns the ROMFile, game identification (if any), and an error.
-func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector *format.Detector, opts Options) (*ROMFile, *GameIdent, error) {
+func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector *Detector, opts Options) (*ROMFile, *GameIdent, error) {
 	size := r.Size()
 
 	// Detect format
@@ -204,14 +214,14 @@ func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector 
 
 	romFile := &ROMFile{
 		Size:   size,
-		Format: formatToRomidentFormat(detectedFormat),
+		Format: detectedFormat,
 	}
 
 	var ident *GameIdent
 
 	// For CHD, always extract hashes from header (fast, no decompression)
-	if detectedFormat == format.CHD {
-		chdInfo, err := format.ParseCHDHeader(r)
+	if detectedFormat == FormatCHD {
+		chdInfo, err := chd.ParseCHDHeader(r)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse CHD header: %w", err)
 		}
@@ -223,61 +233,61 @@ func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector 
 	}
 
 	// Extract identification for identifiable formats
-	if detectedFormat == format.XISO {
+	if detectedFormat == FormatXISO {
 		// Reset reader position for XISO parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyXISO(r, size)
 		}
 	}
-	if detectedFormat == format.XBE {
+	if detectedFormat == FormatXBE {
 		// Reset reader position for XBE parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyXBE(r, size)
 		}
 	}
-	if detectedFormat == format.GBA {
+	if detectedFormat == FormatGBA {
 		// Reset reader position for GBA parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyGBA(r, size)
 		}
 	}
-	if detectedFormat == format.Z64 || detectedFormat == format.V64 || detectedFormat == format.N64 {
+	if detectedFormat == FormatZ64 || detectedFormat == FormatV64 || detectedFormat == FormatN64 {
 		// Reset reader position for N64 parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyN64(r, size)
 		}
 	}
-	if detectedFormat == format.GB {
+	if detectedFormat == FormatGB {
 		// Reset reader position for GB parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyGB(r, size)
 		}
 	}
-	if detectedFormat == format.MD {
+	if detectedFormat == FormatMD {
 		// Reset reader position for MD parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyMD(r, size)
 		}
 	}
-	if detectedFormat == format.SMD {
+	if detectedFormat == FormatSMD {
 		// Reset reader position for SMD parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifySMD(r, size)
 		}
 	}
-	if detectedFormat == format.NDS {
+	if detectedFormat == FormatNDS {
 		// Reset reader position for NDS parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyNDS(r, size)
 		}
 	}
-	if detectedFormat == format.NES {
+	if detectedFormat == FormatNES {
 		// Reset reader position for NES parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyNES(r, size)
 		}
 	}
-	if detectedFormat == format.SNES {
+	if detectedFormat == FormatSNES {
 		// Reset reader position for SNES parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifySNES(r, size)
@@ -307,7 +317,7 @@ func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector 
 	return romFile, ident, nil
 }
 
-func identifySingleFile(path string, size int64, detector *format.Detector, opts Options) (*ROMFile, *GameIdent, error) {
+func identifySingleFile(path string, size int64, detector *Detector, opts Options) (*ROMFile, *GameIdent, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open file: %w", err)
@@ -360,7 +370,7 @@ func (w *readerAtWrapper) Read(p []byte) (n int, err error) {
 // identifyXISO extracts game identification from an Xbox XISO.
 // Returns nil if identification fails (non-fatal).
 func identifyXISO(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseXISO(r, size)
+	info, err := xbox.ParseXISO(r, size)
 	if err != nil {
 		return nil
 	}
@@ -385,7 +395,7 @@ func identifyXISO(r io.ReaderAt, size int64) *GameIdent {
 // identifyXBE extracts game identification from an Xbox XBE file.
 // Returns nil if identification fails (non-fatal).
 func identifyXBE(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseXBE(r, size)
+	info, err := xbox.ParseXBE(r, size)
 	if err != nil {
 		return nil
 	}
@@ -410,7 +420,7 @@ func identifyXBE(r io.ReaderAt, size int64) *GameIdent {
 // identifyGBA extracts game identification from a GBA ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifyGBA(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseGBA(r, size)
+	info, err := gba.ParseGBA(r, size)
 	if err != nil {
 		return nil
 	}
@@ -430,7 +440,7 @@ func identifyGBA(r io.ReaderAt, size int64) *GameIdent {
 // identifyN64 extracts game identification from an N64 ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifyN64(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseN64(r, size)
+	info, err := n64.ParseN64(r, size)
 	if err != nil {
 		return nil
 	}
@@ -453,7 +463,7 @@ func identifyN64(r io.ReaderAt, size int64) *GameIdent {
 // identifyGB extracts game identification from a GB/GBC ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifyGB(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseGB(r, size)
+	info, err := gb.ParseGB(r, size)
 	if err != nil {
 		return nil
 	}
@@ -462,7 +472,7 @@ func identifyGB(r io.ReaderAt, size int64) *GameIdent {
 
 	// Determine platform based on CGB flag
 	var platform Platform
-	if info.Platform == format.GBPlatformGBC {
+	if info.Platform == gb.GBPlatformGBC {
 		platform = PlatformGBC
 	} else {
 		platform = PlatformGB
@@ -482,7 +492,7 @@ func identifyGB(r io.ReaderAt, size int64) *GameIdent {
 	if info.ManufacturerCode != "" {
 		extra["manufacturer"] = info.ManufacturerCode
 	}
-	if info.SGBFlag == format.SGBFlagSupported {
+	if info.SGBFlag == gb.SGBFlagSupported {
 		extra["sgb_support"] = "true"
 	}
 	extra["cartridge_type"] = fmt.Sprintf("%02X", info.CartridgeType)
@@ -500,7 +510,7 @@ func identifyGB(r io.ReaderAt, size int64) *GameIdent {
 // identifyMD extracts game identification from a Mega Drive/Genesis ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifyMD(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseMD(r, size)
+	info, err := md.ParseMD(r, size)
 	if err != nil {
 		return nil
 	}
@@ -540,7 +550,7 @@ func identifyMD(r io.ReaderAt, size int64) *GameIdent {
 // identifySNES extracts game identification from a SNES ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifySNES(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseSNES(r, size)
+	info, err := snes.ParseSNES(r, size)
 	if err != nil {
 		return nil
 	}
@@ -570,14 +580,14 @@ func identifySNES(r io.ReaderAt, size int64) *GameIdent {
 // Returns nil if identification fails (non-fatal).
 // Note: iNES format doesn't include game title, so identification is limited.
 func identifyNES(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseNES(r, size)
+	info, err := nes.ParseNES(r, size)
 	if err != nil {
 		return nil
 	}
 
 	// Determine region from TV system
 	var region Region
-	if info.TVSystem == format.NESTVSystemPAL {
+	if info.TVSystem == nes.NESTVSystemPAL {
 		region = RegionPAL
 	} else {
 		region = RegionNTSC
@@ -595,7 +605,7 @@ func identifyNES(r io.ReaderAt, size int64) *GameIdent {
 	if info.IsNES20 {
 		extra["nes2.0"] = "true"
 	}
-	if info.Mirroring == format.NESMirroringVertical {
+	if info.Mirroring == nes.NESMirroringVertical {
 		extra["mirroring"] = "vertical"
 	} else {
 		extra["mirroring"] = "horizontal"
@@ -611,7 +621,7 @@ func identifyNES(r io.ReaderAt, size int64) *GameIdent {
 // identifyNDS extracts game identification from a Nintendo DS ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifyNDS(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseNDS(r, size)
+	info, err := nds.ParseNDS(r, size)
 	if err != nil {
 		return nil
 	}
@@ -621,14 +631,14 @@ func identifyNDS(r io.ReaderAt, size int64) *GameIdent {
 	// Determine platform based on unit code
 	var platform Platform
 	switch info.Platform {
-	case format.NDSPlatformDSi:
+	case nds.NDSPlatformDSi:
 		platform = PlatformDSi
 	default:
 		platform = PlatformNDS
 	}
 
 	extra := map[string]string{}
-	if info.Platform == format.NDSPlatformDSiDual {
+	if info.Platform == nds.NDSPlatformDSiDual {
 		extra["dsi_enhanced"] = "true"
 	}
 
@@ -646,7 +656,7 @@ func identifyNDS(r io.ReaderAt, size int64) *GameIdent {
 // identifySMD extracts game identification from an SMD (Super Magic Drive) ROM file.
 // Returns nil if identification fails (non-fatal).
 func identifySMD(r io.ReaderAt, size int64) *GameIdent {
-	info, err := format.ParseSMD(r, size)
+	info, err := md.ParseSMD(r, size)
 	if err != nil {
 		return nil
 	}
@@ -723,13 +733,13 @@ func decodeMDRegions(codes []byte) []Region {
 // decodeXboxRegions converts Xbox region flags to a slice of Region.
 func decodeXboxRegions(flags uint32) []Region {
 	var regions []Region
-	if flags&uint32(format.XboxRegionNA) != 0 {
+	if flags&uint32(xbox.XboxRegionNA) != 0 {
 		regions = append(regions, RegionNA)
 	}
-	if flags&uint32(format.XboxRegionJapan) != 0 {
+	if flags&uint32(xbox.XboxRegionJapan) != 0 {
 		regions = append(regions, RegionJP)
 	}
-	if flags&uint32(format.XboxRegionEUAU) != 0 {
+	if flags&uint32(xbox.XboxRegionEUAU) != 0 {
 		regions = append(regions, RegionEU, RegionAU)
 	}
 	if len(regions) == 0 {
@@ -775,19 +785,19 @@ func formatROMSize(bytes int) string {
 }
 
 // decodeSNESMapMode converts a SNES map mode byte to a human-readable string.
-func decodeSNESMapMode(mode format.SNESMapMode) string {
+func decodeSNESMapMode(mode snes.SNESMapMode) string {
 	switch mode {
-	case format.SNESMapModeLoROM:
+	case snes.SNESMapModeLoROM:
 		return "LoROM"
-	case format.SNESMapModeHiROM:
+	case snes.SNESMapModeHiROM:
 		return "HiROM"
-	case format.SNESMapModeLoROMSA1:
+	case snes.SNESMapModeLoROMSA1:
 		return "LoROM+SA-1"
-	case format.SNESMapModeExLoROM:
+	case snes.SNESMapModeExLoROM:
 		return "ExLoROM"
-	case format.SNESMapModeExHiROM:
+	case snes.SNESMapModeExHiROM:
 		return "ExHiROM"
-	case format.SNESMapModeHiROMSPC, format.SNESMapModeHiROMSPC2:
+	case snes.SNESMapModeHiROMSPC, snes.SNESMapModeHiROMSPC2:
 		return "HiROM+SPC7110"
 	default:
 		return fmt.Sprintf("0x%02X", mode)
@@ -905,43 +915,5 @@ func decodeN64Region(code byte) Region {
 		return RegionNordic
 	default:
 		return RegionUnknown
-	}
-}
-
-// formatToRomidentFormat converts format.Format to romident.Format
-func formatToRomidentFormat(f format.Format) Format {
-	switch f {
-	case format.CHD:
-		return FormatCHD
-	case format.XISO:
-		return FormatXISO
-	case format.XBE:
-		return FormatXBE
-	case format.ISO9660:
-		return FormatISO9660
-	case format.ZIP:
-		return FormatZIP
-	case format.GBA:
-		return FormatGBA
-	case format.Z64:
-		return FormatZ64
-	case format.V64:
-		return FormatV64
-	case format.N64:
-		return FormatN64
-	case format.GB:
-		return FormatGB
-	case format.MD:
-		return FormatMD
-	case format.SMD:
-		return FormatSMD
-	case format.NDS:
-		return FormatNDS
-	case format.NES:
-		return FormatNES
-	case format.SNES:
-		return FormatSNES
-	default:
-		return FormatUnknown
 	}
 }
