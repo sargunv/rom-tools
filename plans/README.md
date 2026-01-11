@@ -2,15 +2,16 @@
 
 ## Currently Implemented
 
-| Platform                      | Format   | Extensions             | Status  |
-| ----------------------------- | -------- | ---------------------- | ------- |
-| Game Boy Advance              | GBA      | `.gba`                 | ✅ Done |
-| Game Boy / Color              | GB       | `.gb`, `.gbc`          | ✅ Done |
-| Nintendo 64                   | N64      | `.z64`, `.v64`, `.n64` | ✅ Done |
-| Mega Drive / Genesis          | MD       | `.md`, `.gen`, `.smd`  | ✅ Done |
-| Xbox                          | XBE/XISO | `.xbe`, `.iso`         | ✅ Done |
-| Nintendo Entertainment System | NES      | `.nes`                 | ✅ Done |
-| Nintendo DS                   | NDS      | `.nds`, `.dsi`, `.ids` | ✅ Done |
+| Platform             | Format   | Extensions             | Status  |
+| -------------------- | -------- | ---------------------- | ------- |
+| Game Boy Advance     | GBA      | `.gba`                 | ✅ Done |
+| Game Boy / Color     | GB       | `.gb`, `.gbc`          | ✅ Done |
+| Nintendo 64          | N64      | `.z64`, `.v64`, `.n64` | ✅ Done |
+| Mega Drive / Genesis | MD       | `.md`, `.gen`, `.smd`  | ✅ Done |
+| Xbox                 | XBE/XISO | `.xbe`, `.iso`         | ✅ Done |
+| Famicom              | NES      | `.nes`                 | ✅ Done |
+| Nintendo DS          | NDS      | `.nds`, `.dsi`, `.ids` | ✅ Done |
+| Super Famicom        | SNES     | `.sfc`, `.smc`         | ✅ Done |
 
 ## Planned Support
 
@@ -18,7 +19,6 @@
 
 | Platform | Complexity | Plan |
 | --- | --- | --- |
-| [SNES / Super Famicom](snes-support.md) | Medium-High | Variable header location |
 | [PlayStation 1](playstation-support.md) | Medium-High | ISO + SYSTEM.CNF parsing |
 | [PlayStation Portable](psp-support.md) | Medium-High | ISO + PARAM.SFO parsing |
 
@@ -29,7 +29,6 @@
 | [Master System / Game Gear](sms-gg-support.md) | Low-Medium | Shared format, variable header location |
 | [GameCube / Wii](gamecube-wii-support.md) | Medium | Multiple formats (ISO, WBFS) |
 | [Sega 32X / Sega CD](32x-segacd-support.md) | Low-Medium | Extends Mega Drive format |
-| [Atari Lynx](atari-lynx-support.md) | Low | Simple 64-byte header |
 | [TurboGrafx-16 / PC Engine](turbografx-support.md) | Low (ROM) | No header, hash-based ID |
 
 ### Lower Priority (Complex or Niche)
@@ -39,7 +38,6 @@
 | [Nintendo 3DS](3ds-support.md) | High | NCSD/NCCH nested format |
 | [Sega Saturn](saturn-support.md) | Medium | IP.BIN header |
 | [Sega Dreamcast](dreamcast-support.md) | High | GDI/CDI multi-track |
-| [Neo Geo](neo-geo-support.md) | Medium-High | Multi-file ROM sets |
 | [PS Vita](ps-vita-support.md) | Low-High | VPK easy, PKG encrypted |
 
 ## Complexity Ratings
@@ -59,9 +57,8 @@
 
 ### Phase 2: Major Platforms
 
-1. **SNES** - Requires header location detection
-2. **PSP** - Needs ISO + SFO parsing (reusable)
-3. **GameCube/Wii** - Popular, straightforward once WBFS handled
+1. **PSP** - Needs ISO + SFO parsing (reusable)
+2. **GameCube/Wii** - Popular, straightforward once WBFS handled
 
 ### Phase 3: CD-Based Systems
 

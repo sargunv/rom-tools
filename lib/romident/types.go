@@ -29,6 +29,7 @@ const (
 	FormatSMD     Format = "smd"
 	FormatNDS     Format = "nds"
 	FormatNES     Format = "nes"
+	FormatSNES    Format = "snes"
 )
 
 // Region represents a game region using ISO country codes, continent codes, and some other non-country codes.
@@ -49,7 +50,10 @@ const (
 	RegionNL      Region = "NL"      // Netherlands
 	RegionKR      Region = "KR"      // Korea
 	RegionCA      Region = "CA"      // Canada
-	RegionNordic  Region = "Nordic"  // Scandinavia
+	RegionSE      Region = "SE"      // Sweden
+	RegionFI      Region = "FI"      // Finland
+	RegionDK      Region = "DK"      // Denmark
+	RegionNordic  Region = "Nordic"  // Scandinavia (combined)
 	RegionNTSC    Region = "NTSC"    // NTSC region (generic)
 	RegionPAL     Region = "PAL"     // PAL region (generic)
 	RegionWorld   Region = "World"   // Region-free/worldwide
@@ -69,6 +73,7 @@ const (
 	PlatformNDS  Platform = "nds"
 	PlatformDSi  Platform = "dsi"
 	PlatformNES  Platform = "nes"
+	PlatformSNES Platform = "snes"
 )
 
 // HashAlgorithm identifies a hash algorithm.

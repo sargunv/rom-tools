@@ -8,7 +8,7 @@ import (
 	"github.com/sargunv/rom-tools/internal/testutil"
 )
 
-func TestDetectByMagic(t *testing.T) {
+func TestDetect(t *testing.T) {
 	detector := NewDetector()
 
 	tests := []struct {
@@ -58,68 +58,75 @@ func TestDetectByMagic(t *testing.T) {
 				t.Fatalf("Failed to stat file: %v", err)
 			}
 
-			got, err := detector.DetectByMagic(file, stat.Size())
+			got, err := detector.Detect(file, stat.Size(), tt.filename)
 			if err != nil {
-				t.Fatalf("DetectByMagic() error = %v", err)
+				t.Fatalf("Detect() error = %v", err)
 			}
 
 			if got != tt.want {
-				t.Errorf("DetectByMagic() = %v, want %v", got, tt.want)
+				t.Errorf("Detect() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDetectByExtension(t *testing.T) {
+func TestCandidatesByExtension(t *testing.T) {
 	detector := NewDetector()
 
 	tests := []struct {
 		name     string
 		filename string
-		want     Format
+		want     []Format
 	}{
 		{
 			name:     "CHD extension",
 			filename: "test.chd",
-			want:     CHD,
+			want:     []Format{CHD},
 		},
 		{
 			name:     "ZIP extension",
 			filename: "test.zip",
-			want:     ZIP,
+			want:     []Format{ZIP},
 		},
 		{
 			name:     "XISO extension",
 			filename: "test.xiso",
-			want:     XISO,
+			want:     []Format{XISO},
 		},
 		{
 			name:     "XBE extension",
 			filename: "default.xbe",
-			want:     XBE,
+			want:     []Format{XBE},
 		},
 		{
 			name:     "GBA extension",
 			filename: "test.gba",
-			want:     GBA,
+			want:     []Format{GBA},
 		},
 		{
 			name:     "ISO extension (ambiguous)",
 			filename: "test.iso",
-			want:     Unknown,
+			want:     []Format{XISO, ISO9660},
 		},
 		{
 			name:     "Unknown extension",
 			filename: "test.unknown",
-			want:     Unknown,
+			want:     nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := detector.DetectByExtension(tt.filename)
-			if got != tt.want {
-				t.Errorf("DetectByExtension() = %v, want %v", got, tt.want)
+			got := detector.CandidatesByExtension(tt.filename)
+			if len(got) != len(tt.want) {
+				t.Errorf("CandidatesByExtension() = %v, want %v", got, tt.want)
+				return
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("CandidatesByExtension() = %v, want %v", got, tt.want)
+					return
+				}
 			}
 		})
 	}

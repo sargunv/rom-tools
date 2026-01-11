@@ -162,7 +162,12 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 
 	for _, entry := range entries {
 		// Use extension-based format detection (no decompression)
-		detectedFormat := detector.DetectByExtension(entry.Name)
+		// In fast mode, we can't verify with magic, so only trust unambiguous extensions
+		candidates := detector.CandidatesByExtension(entry.Name)
+		detectedFormat := format.Unknown
+		if len(candidates) == 1 {
+			detectedFormat = candidates[0]
+		}
 
 		hashes := []Hash{}
 		if entry.CRC32 != 0 {
@@ -270,6 +275,12 @@ func identifySingleReader(r container.ReaderAtSeekCloser, name string, detector 
 		// Reset reader position for NES parsing
 		if _, err := r.Seek(0, 0); err == nil {
 			ident = identifyNES(r, size)
+		}
+	}
+	if detectedFormat == format.SNES {
+		// Reset reader position for SNES parsing
+		if _, err := r.Seek(0, 0); err == nil {
+			ident = identifySNES(r, size)
 		}
 	}
 
@@ -526,6 +537,35 @@ func identifyMD(r io.ReaderAt, size int64) *GameIdent {
 	}
 }
 
+// identifySNES extracts game identification from a SNES ROM file.
+// Returns nil if identification fails (non-fatal).
+func identifySNES(r io.ReaderAt, size int64) *GameIdent {
+	info, err := format.ParseSNES(r, size)
+	if err != nil {
+		return nil
+	}
+
+	version := info.Version
+
+	extra := map[string]string{
+		"map_mode": decodeSNESMapMode(info.MapMode),
+	}
+	if info.SRAMSize > 0 {
+		extra["sram"] = formatROMSize(info.SRAMSize)
+	}
+	if info.HasCopierHeader {
+		extra["copier_header"] = "true"
+	}
+
+	return &GameIdent{
+		Platform: PlatformSNES,
+		Title:    info.Title,
+		Regions:  []Region{decodeSNESRegion(info.DestinationCode)},
+		Version:  &version,
+		Extra:    extra,
+	}
+}
+
 // identifyNES extracts game identification from an NES ROM file.
 // Returns nil if identification fails (non-fatal).
 // Note: iNES format doesn't include game title, so identification is limited.
@@ -544,9 +584,9 @@ func identifyNES(r io.ReaderAt, size int64) *GameIdent {
 	}
 
 	extra := map[string]string{
-		"mapper":       fmt.Sprintf("%d", info.Mapper),
-		"prg_rom_size": fmt.Sprintf("%d", info.PRGROMSize),
-		"chr_rom_size": fmt.Sprintf("%d", info.CHRROMSize),
+		"mapper":  fmt.Sprintf("%d", info.Mapper),
+		"prg_rom": formatROMSize(info.PRGROMSize),
+		"chr_rom": formatROMSize(info.CHRROMSize),
 	}
 
 	if info.HasBattery {
@@ -720,6 +760,80 @@ func decodeGBARegion(code byte) Region {
 	}
 }
 
+// formatROMSize formats a ROM size in bytes to a human-readable string.
+func formatROMSize(bytes int) string {
+	if bytes == 0 {
+		return "0"
+	}
+	if bytes >= 1024*1024 {
+		return fmt.Sprintf("%d MiB", bytes/(1024*1024))
+	}
+	if bytes >= 1024 {
+		return fmt.Sprintf("%d KiB", bytes/1024)
+	}
+	return fmt.Sprintf("%d B", bytes)
+}
+
+// decodeSNESMapMode converts a SNES map mode byte to a human-readable string.
+func decodeSNESMapMode(mode format.SNESMapMode) string {
+	switch mode {
+	case format.SNESMapModeLoROM:
+		return "LoROM"
+	case format.SNESMapModeHiROM:
+		return "HiROM"
+	case format.SNESMapModeLoROMSA1:
+		return "LoROM+SA-1"
+	case format.SNESMapModeExLoROM:
+		return "ExLoROM"
+	case format.SNESMapModeExHiROM:
+		return "ExHiROM"
+	case format.SNESMapModeHiROMSPC, format.SNESMapModeHiROMSPC2:
+		return "HiROM+SPC7110"
+	default:
+		return fmt.Sprintf("0x%02X", mode)
+	}
+}
+
+// decodeSNESRegion converts a SNES destination code to a Region.
+func decodeSNESRegion(code byte) Region {
+	switch code {
+	case 0x00:
+		return RegionJP
+	case 0x01:
+		return RegionNA
+	case 0x02:
+		return RegionEU
+	case 0x03:
+		return RegionSE
+	case 0x04:
+		return RegionFI
+	case 0x05:
+		return RegionDK
+	case 0x06:
+		return RegionFR
+	case 0x07:
+		return RegionNL
+	case 0x08:
+		return RegionES
+	case 0x09:
+		return RegionDE
+	case 0x0A:
+		return RegionIT
+	case 0x0B:
+		return RegionCN
+	case 0x0D:
+		return RegionKR
+	case 0x0F:
+		return RegionCA
+	case 0x10:
+		return RegionBR
+	case 0x11:
+		return RegionAU
+	default:
+		return RegionUnknown
+	}
+}
+
 // decodeNDSRegion converts an NDS region code byte to a Region.
 // The region is typically the 4th character of the game code.
 func decodeNDSRegion(code byte) Region {
@@ -825,6 +939,8 @@ func formatToRomidentFormat(f format.Format) Format {
 		return FormatNDS
 	case format.NES:
 		return FormatNES
+	case format.SNES:
+		return FormatSNES
 	default:
 		return FormatUnknown
 	}

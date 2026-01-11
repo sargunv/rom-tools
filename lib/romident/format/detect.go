@@ -24,8 +24,9 @@ const (
 	GB      Format = "gb"
 	MD      Format = "md"
 	SMD     Format = "smd"
-	NDS     Format = "nds" // Nintendo DS
-	NES     Format = "nes" // Nintendo Entertainment System
+	NDS     Format = "nds"  // Nintendo DS
+	NES     Format = "nes"  // Nintendo Entertainment System
+	SNES    Format = "snes" // Super Nintendo Entertainment System
 )
 
 // Magic bytes and offsets for various formats
@@ -63,43 +64,46 @@ func NewDetector() *Detector {
 	return &Detector{}
 }
 
-// DetectByExtension returns a likely format based on file extension.
-// Returns Unknown if the extension is not recognized.
-func (d *Detector) DetectByExtension(filename string) Format {
+// CandidatesByExtension returns possible formats based on file extension.
+// Returns nil for generic/unknown extensions (we don't do magic-only detection).
+func (d *Detector) CandidatesByExtension(filename string) []Format {
 	ext := strings.ToLower(filepath.Ext(filename))
 
 	switch ext {
 	case ".chd":
-		return CHD
+		return []Format{CHD}
 	case ".zip":
-		return ZIP
+		return []Format{ZIP}
 	case ".iso":
-		// Could be XISO or ISO9660, need magic detection
-		return Unknown
+		// Ambiguous: could be XISO or ISO9660
+		return []Format{XISO, ISO9660}
 	case ".xiso":
-		return XISO
+		return []Format{XISO}
 	case ".xbe":
-		return XBE
+		return []Format{XBE}
 	case ".gba":
-		return GBA
+		return []Format{GBA}
 	case ".z64":
-		return Z64
+		return []Format{Z64}
 	case ".v64":
-		return V64
+		return []Format{V64}
 	case ".n64":
-		return N64
+		return []Format{N64}
 	case ".gb", ".gbc":
-		return GB
+		return []Format{GB}
 	case ".md", ".gen":
-		return MD
+		return []Format{MD}
 	case ".smd":
-		return SMD
+		return []Format{SMD}
 	case ".nds", ".dsi", ".ids":
-		return NDS
+		return []Format{NDS}
 	case ".nes":
-		return NES
+		return []Format{NES}
+	case ".sfc", ".smc":
+		return []Format{SNES}
 	default:
-		return Unknown
+		// Generic extensions like .bin or no extension: no candidates
+		return nil
 	}
 }
 
@@ -109,122 +113,86 @@ type ReaderAtSeeker interface {
 	io.Seeker
 }
 
-// DetectByMagic detects the format by reading magic bytes.
-// Requires a seekable reader to check various offsets.
-func (d *Detector) DetectByMagic(r ReaderAtSeeker, size int64) (Format, error) {
-	// Check for ZIP
-	if size >= zipOffset+int64(len(zipMagic)) {
-		buf := make([]byte, len(zipMagic))
-		if _, err := r.ReadAt(buf, zipOffset); err == nil {
-			if bytesEqual(buf, zipMagic) {
-				return ZIP, nil
-			}
-		}
+// VerifyFormat checks if a file matches a specific format using magic bytes.
+func (d *Detector) VerifyFormat(r io.ReaderAt, size int64, format Format) bool {
+	switch format {
+	case ZIP:
+		return checkMagic(r, size, zipOffset, zipMagic)
+	case CHD:
+		return checkMagic(r, size, chdOffset, chdMagic)
+	case XISO:
+		return checkMagic(r, size, xisoOffset, xisoMagic)
+	case XBE:
+		return checkMagic(r, size, xbeOffset, xbeMagic)
+	case ISO9660:
+		return checkMagic(r, size, iso9660Offset, iso9660Magic)
+	case GBA:
+		return checkMagic(r, size, gbaOffset, gbaMagic)
+	case NES:
+		return IsNESROM(r, size)
+	case NDS:
+		return IsNDSROM(r, size)
+	case GB:
+		return IsGBROM(r, size)
+	case MD:
+		return IsMDROM(r, size)
+	case SMD:
+		return IsSMDROM(r, size)
+	case SNES:
+		return IsSNESROM(r, size)
+	case Z64:
+		return checkN64Format(r, size) == Z64
+	case V64:
+		return checkN64Format(r, size) == V64
+	case N64:
+		return checkN64Format(r, size) == N64
+	default:
+		return false
 	}
-
-	// Check for CHD
-	if size >= chdOffset+int64(len(chdMagic)) {
-		buf := make([]byte, len(chdMagic))
-		if _, err := r.ReadAt(buf, chdOffset); err == nil {
-			if bytesEqual(buf, chdMagic) {
-				return CHD, nil
-			}
-		}
-	}
-
-	// Check for Xbox XISO
-	if size >= xisoOffset+int64(len(xisoMagic)) {
-		buf := make([]byte, len(xisoMagic))
-		if _, err := r.ReadAt(buf, xisoOffset); err == nil {
-			if bytesEqual(buf, xisoMagic) {
-				return XISO, nil
-			}
-		}
-	}
-
-	// Check for XBE
-	if size >= xbeOffset+int64(len(xbeMagic)) {
-		buf := make([]byte, len(xbeMagic))
-		if _, err := r.ReadAt(buf, xbeOffset); err == nil {
-			if bytesEqual(buf, xbeMagic) {
-				return XBE, nil
-			}
-		}
-	}
-
-	// Check for NES (iNES magic at offset 0)
-	if IsNESROM(r, size) {
-		return NES, nil
-	}
-
-	// Check for NDS
-	if IsNDSROM(r, size) {
-		return NDS, nil
-	}
-
-	// Check for GBA
-	if size >= gbaOffset+int64(len(gbaMagic)) {
-		buf := make([]byte, len(gbaMagic))
-		if _, err := r.ReadAt(buf, gbaOffset); err == nil {
-			if bytesEqual(buf, gbaMagic) {
-				return GBA, nil
-			}
-		}
-	}
-
-	// Check for N64 (any byte order: 0x80 at position 0, 1, or 3)
-	if size >= 4 {
-		buf := make([]byte, 4)
-		if _, err := r.ReadAt(buf, 0); err == nil {
-			if f := DetectN64Format(buf); f != Unknown {
-				return f, nil
-			}
-		}
-	}
-
-	// Check for GB/GBC (Nintendo Logo at offset 0x104)
-	if IsGBROM(r, size) {
-		return GB, nil
-	}
-
-	// Check for SMD (Super Magic Drive interleaved format) before raw MD
-	if IsSMDROM(r, size) {
-		return SMD, nil
-	}
-
-	// Check for Mega Drive (SEGA at offset 0x100)
-	if IsMDROM(r, size) {
-		return MD, nil
-	}
-
-	// Check for ISO9660
-	if size >= iso9660Offset+int64(len(iso9660Magic)) {
-		buf := make([]byte, len(iso9660Magic))
-		if _, err := r.ReadAt(buf, iso9660Offset); err == nil {
-			if bytesEqual(buf, iso9660Magic) {
-				return ISO9660, nil
-			}
-		}
-	}
-
-	return Unknown, nil
 }
 
-// Detect combines extension and magic detection.
-// Uses extension as a hint, then verifies with magic bytes when possible.
+// checkMagic is a helper to verify magic bytes at a specific offset.
+func checkMagic(r io.ReaderAt, size int64, offset int64, magic []byte) bool {
+	if size < offset+int64(len(magic)) {
+		return false
+	}
+	buf := make([]byte, len(magic))
+	if _, err := r.ReadAt(buf, offset); err != nil {
+		return false
+	}
+	return bytesEqual(buf, magic)
+}
+
+// checkN64Format returns the N64 format variant if valid, Unknown otherwise.
+func checkN64Format(r io.ReaderAt, size int64) Format {
+	if size < 4 {
+		return Unknown
+	}
+	buf := make([]byte, 4)
+	if _, err := r.ReadAt(buf, 0); err != nil {
+		return Unknown
+	}
+	return DetectN64Format(buf)
+}
+
+// Detect identifies the format using extension to narrow candidates, then magic to verify.
+// Returns Unknown for generic extensions (like .bin) or if magic verification fails.
 func (d *Detector) Detect(r ReaderAtSeeker, size int64, filename string) (Format, error) {
-	// First try magic detection
-	format, err := d.DetectByMagic(r, size)
-	if err != nil {
-		return Unknown, err
+	candidates := d.CandidatesByExtension(filename)
+	if len(candidates) == 0 {
+		// Generic or unknown extension: no identification
+		return Unknown, nil
 	}
 
-	if format != Unknown {
-		return format, nil
+	// Try each candidate and return the first that verifies
+	for _, candidate := range candidates {
+		if d.VerifyFormat(r, size, candidate) {
+			return candidate, nil
+		}
 	}
 
-	// Fall back to extension
-	return d.DetectByExtension(filename), nil
+	// Extension suggested format(s) but none verified
+	return Unknown, nil
 }
 
 func bytesEqual(a, b []byte) bool {

@@ -28,11 +28,12 @@ var Cmd = &cobra.Command{
 Supports:
 - Platform specific ROMs: identifies game information from the ROM header, depending on the format. Supported ROM formats:
   - Nintendo Entertainment System: .nes
+  - Super Nintendo Entertainment System: .sfc, .smc
   - Nintendo 64: .z64, .v64, .n64
   - Nintendo Game Boy / Color: .gb, .gbc
   - Nintendo Game Boy Advance: .gba
-  - Sega Mega Drive / Genesis: .md, .gen, .smd
   - Nintendo DS: .nds, .dsi, .ids
+  - Sega Mega Drive / Genesis: .md, .gen, .smd
   - Microsoft Xbox: .xiso, .xiso.iso, and .xbe
 - .chd discs: extracts SHA1 hashes from header (fast, no decompression)
 - .zip archives: extracts CRC32 from metadata (fast, no decompression). If in slow mode, also identifies files within the ZIP.
@@ -172,7 +173,29 @@ func outputTextSingle(rom *romident.ROM) {
 		if rom.Ident.DiscNumber != nil {
 			fmt.Printf("  Disc Number: %d\n", *rom.Ident.DiscNumber)
 		}
+		if len(rom.Ident.Extra) > 0 {
+			// Sort keys for consistent output
+			keys := make([]string, 0, len(rom.Ident.Extra))
+			for k := range rom.Ident.Extra {
+				keys = append(keys, k)
+			}
+			slices.Sort(keys)
+			for _, k := range keys {
+				fmt.Printf("  %s: %s\n", formatExtraKey(k), rom.Ident.Extra[k])
+			}
+		}
 	}
+}
+
+// formatExtraKey converts snake_case keys to Title Case for display.
+func formatExtraKey(key string) string {
+	words := strings.Split(key, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(word[:1]) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func formatSize(bytes int64) string {
