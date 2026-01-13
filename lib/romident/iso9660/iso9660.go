@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/sargunv/rom-tools/lib/romident/cnf"
 	"github.com/sargunv/rom-tools/lib/romident/core"
-	"github.com/sargunv/rom-tools/lib/romident/ps2"
 )
 
 // ISO 9660 disc identification with platform dispatch.
@@ -15,6 +15,7 @@ import (
 // This package handles ISO 9660 filesystem parsing and dispatches to
 // platform-specific handlers based on the disc contents:
 //   - SYSTEM.CNF with BOOT2 → PS2
+//   - SYSTEM.CNF with BOOT → PS1
 //
 // ISO 9660 layout (relevant parts):
 //   - Sector 16 (offset 0x8000): Primary Volume Descriptor
@@ -40,9 +41,9 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 		return nil, err
 	}
 
-	// Try to read SYSTEM.CNF (PS2 discs)
+	// Try to read SYSTEM.CNF (PS1/PS2 discs)
 	if data, err := img.readFile("SYSTEM.CNF"); err == nil {
-		if ident := ps2.IdentifyFromSystemCNF(data); ident != nil {
+		if ident := cnf.IdentifyFromSystemCNF(data); ident != nil {
 			return ident, nil
 		}
 	}

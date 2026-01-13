@@ -1,4 +1,4 @@
-package ps2
+package cnf
 
 import (
 	"bufio"
@@ -8,48 +8,61 @@ import (
 	"github.com/sargunv/rom-tools/lib/romident/core"
 )
 
-// PS2 SYSTEM.CNF parsing for disc identification.
+// PlayStation SYSTEM.CNF parsing for disc identification.
 //
-// PS2 discs contain a SYSTEM.CNF file at the root with format:
+// PS1 and PS2 discs contain a SYSTEM.CNF file at the root with format:
+//
+// PS2:
 //
 //	BOOT2 = cdrom0:\SLUS_123.45;1
 //	VER = 1.00
 //	VMODE = NTSC
 //
-// The disc ID (e.g., "SLUS_123.45") is the executable filename.
+// PS1:
+//
+//	BOOT = cdrom:\SCUS_943.00;1
+//	TCB = 4
+//	EVENT = 16
+//
+// The disc ID (e.g., "SLUS-123.45") is the executable filename.
 // The prefix encodes the region:
 //   - SLUS/SCUS = US (NTSC-U)
 //   - SLES/SCES = EU (PAL)
 //   - SLPS/SCPS/SLPM = JP (NTSC-J)
 //   - SLKA/SCKA = KR
 
-// PS2Info contains metadata extracted from a PS2 disc.
-type PS2Info struct {
-	DiscID    string // e.g., "SLUS_123.45"
-	Version   string // from VER line
-	VideoMode string // NTSC or PAL
+// Info contains metadata extracted from a PlayStation disc.
+type Info struct {
+	DiscID    string // Original format from SYSTEM.CNF (e.g., "SCUS_943.00")
+	Version   string // from VER line (PS2 only)
+	VideoMode string // NTSC or PAL (PS2 only)
 }
 
-// IdentifyFromSystemCNF parses PS2 SYSTEM.CNF content.
-// Returns nil if not a valid PS2 SYSTEM.CNF (e.g., PS1 format uses BOOT instead of BOOT2).
+// IdentifyFromSystemCNF parses PlayStation SYSTEM.CNF content.
+// Returns nil if not a valid PS1/PS2 SYSTEM.CNF.
 func IdentifyFromSystemCNF(data []byte) *core.GameIdent {
-	info := parseSystemCNF(data)
+	platform, info := parseSystemCNF(data)
 	if info == nil {
 		return nil
 	}
 
+	// Normalize disc ID: replace underscore with hyphen, remove periods
+	normalizedID := strings.ReplaceAll(info.DiscID, "_", "-")
+	normalizedID = strings.ReplaceAll(normalizedID, ".", "")
+
 	return &core.GameIdent{
-		Platform: core.PlatformPS2,
-		TitleID:  info.DiscID,
+		Platform: platform,
+		TitleID:  normalizedID,
 		Regions:  []core.Region{decodeRegion(info.DiscID)},
 		Extra:    info,
 	}
 }
 
-// parseSystemCNF extracts PS2 info from SYSTEM.CNF content.
-// Returns nil if BOOT2 line is not found (indicates non-PS2, e.g., PS1).
-func parseSystemCNF(data []byte) *PS2Info {
-	info := &PS2Info{}
+// parseSystemCNF extracts PlayStation info from SYSTEM.CNF content.
+// Returns the platform and info, or nil if neither BOOT nor BOOT2 found.
+func parseSystemCNF(data []byte) (core.Platform, *Info) {
+	info := &Info{}
+	var platform core.Platform
 
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
@@ -66,8 +79,15 @@ func parseSystemCNF(data []byte) *PS2Info {
 
 		switch key {
 		case "BOOT2":
-			// Extract disc ID from path: cdrom0:\SLUS_123.45;1
+			// PS2 disc
+			platform = core.PlatformPS2
 			info.DiscID = extractDiscID(value)
+		case "BOOT":
+			// PS1 disc (only use if BOOT2 not found)
+			if platform != core.PlatformPS2 {
+				platform = core.PlatformPS1
+				info.DiscID = extractDiscID(value)
+			}
 		case "VER":
 			info.Version = value
 		case "VMODE":
@@ -75,17 +95,16 @@ func parseSystemCNF(data []byte) *PS2Info {
 		}
 	}
 
-	// BOOT2 is required for PS2 identification
 	if info.DiscID == "" {
-		return nil
+		return "", nil
 	}
 
-	return info
+	return platform, info
 }
 
-// extractDiscID extracts the disc ID from a BOOT2 path.
-// Input: "cdrom0:\SLUS_123.45;1" or similar
-// Output: "SLUS_123.45"
+// extractDiscID extracts the disc ID from a BOOT/BOOT2 path.
+// Input: "cdrom0:\SLUS_123.45;1" or "cdrom:\SCUS_943.00;1"
+// Output: "SLUS_123.45" or "SCUS_943.00"
 func extractDiscID(bootPath string) string {
 	// Find last backslash
 	lastBackslash := strings.LastIndex(bootPath, "\\")
@@ -109,7 +128,7 @@ func extractDiscID(bootPath string) string {
 	return filename
 }
 
-// decodeRegion maps a PS2 disc ID prefix to a region.
+// decodeRegion maps a PlayStation disc ID prefix to a region.
 func decodeRegion(discID string) core.Region {
 	if len(discID) < 4 {
 		return core.RegionUnknown
