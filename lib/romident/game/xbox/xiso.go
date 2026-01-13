@@ -28,7 +28,7 @@ const (
 
 // IdentifyXISO verifies the format and extracts game identification from an XISO.
 func IdentifyXISO(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseXISO(r, size)
+	info, err := parseXISO(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +36,8 @@ func IdentifyXISO(r io.ReaderAt, size int64) (*game.GameIdent, error) {
 	return xboxInfoToGameIdent(info), nil
 }
 
-// ParseXISO extracts game information from an Xbox XISO image.
-func ParseXISO(r io.ReaderAt, size int64) (*XboxInfo, error) {
+// parseXISO extracts game information from an Xbox XISO image.
+func parseXISO(r io.ReaderAt, size int64) (*XboxInfo, error) {
 	// Read volume descriptor
 	if size < xisoVolumeDescOffset+32 {
 		return nil, fmt.Errorf("file too small for XISO header")
@@ -64,7 +64,7 @@ func ParseXISO(r io.ReaderAt, size int64) (*XboxInfo, error) {
 	}
 
 	// Parse XBE using the dedicated XBE handler
-	return ParseXBEAt(r, xbeOffset)
+	return parseXBEAt(r, xbeOffset)
 }
 
 // findDefaultXBE searches the XDVDFS directory tree for default.xbe.

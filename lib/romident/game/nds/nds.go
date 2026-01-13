@@ -69,8 +69,8 @@ type NDSInfo struct {
 	Platform   NDSPlatform
 }
 
-// ParseNDS extracts game information from an NDS ROM file.
-func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
+// parseNDS extracts game information from an NDS ROM file.
+func parseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
 	if size < ndsHeaderSize {
 		return nil, fmt.Errorf("file too small for NDS header: %d bytes", size)
 	}
@@ -125,12 +125,7 @@ func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
 
 // Identify verifies the format and extracts game identification from an NDS ROM.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	// Validate format first
-	if !IsNDSROM(r, size) {
-		return nil, fmt.Errorf("not a valid NDS ROM")
-	}
-
-	info, err := ParseNDS(r, size)
+	info, err := parseNDS(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -185,46 +180,4 @@ func decodeRegion(code byte) game.Region {
 	default:
 		return game.RegionUnknown
 	}
-}
-
-// IsNDSROM checks if the data has a valid NDS ROM structure.
-// We validate the ARM9 and ARM7 ROM offsets which must be present in all NDS ROMs.
-func IsNDSROM(r io.ReaderAt, size int64) bool {
-	if size < ndsHeaderSize {
-		return false
-	}
-
-	header := make([]byte, ndsHeaderSize)
-	if _, err := r.ReadAt(header, 0); err != nil {
-		return false
-	}
-
-	// Read ARM9 ROM offset (little-endian u32 at 0x20)
-	arm9Offset := uint32(header[ndsARM9OffsetPos]) |
-		uint32(header[ndsARM9OffsetPos+1])<<8 |
-		uint32(header[ndsARM9OffsetPos+2])<<16 |
-		uint32(header[ndsARM9OffsetPos+3])<<24
-
-	// Read ARM7 ROM offset (little-endian u32 at 0x30)
-	arm7Offset := uint32(header[ndsARM7OffsetPos]) |
-		uint32(header[ndsARM7OffsetPos+1])<<8 |
-		uint32(header[ndsARM7OffsetPos+2])<<16 |
-		uint32(header[ndsARM7OffsetPos+3])<<24
-
-	// ARM9 offset must be at least 0x200 (after header) and word-aligned
-	if arm9Offset < ndsHeaderSize || arm9Offset%4 != 0 {
-		return false
-	}
-
-	// ARM7 offset must be at least 0x200 (after header) and word-aligned
-	if arm7Offset < ndsHeaderSize || arm7Offset%4 != 0 {
-		return false
-	}
-
-	// Both offsets must be within the file
-	if uint32(size) < arm9Offset || uint32(size) < arm7Offset {
-		return false
-	}
-
-	return true
 }

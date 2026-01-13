@@ -35,8 +35,6 @@ import (
 const (
 	gbHeaderStart        = 0x100
 	gbHeaderSize         = 0x50 // 0x100 to 0x14F
-	gbLogoOffset         = 0x104
-	gbLogoSize           = 48
 	gbTitleOffset        = 0x134
 	gbTitleMaxLen        = 16
 	gbTitleNewLen        = 11 // Title length in newer cartridges with manufacturer code
@@ -52,19 +50,7 @@ const (
 	gbDestCodeOffset     = 0x14A
 	gbOldLicenseeOffset  = 0x14B
 	gbVersionOffset      = 0x14C
-	gbHeaderChecksumOff  = 0x14D
 )
-
-// Nintendo Logo - required in all valid GB/GBC ROMs
-// The boot ROM verifies this logo before running the game
-var gbNintendoLogo = []byte{
-	0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B,
-	0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
-	0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
-	0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
-	0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC,
-	0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E,
-}
 
 // CGBFlag values
 const (
@@ -102,8 +88,8 @@ type GBInfo struct {
 	Platform         GBPlatform // GB or GBC based on CGB flag
 }
 
-// ParseGB extracts game information from a GB/GBC ROM file.
-func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
+// parseGB extracts game information from a GB/GBC ROM file.
+func parseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
 	if size < gbHeaderStart+gbHeaderSize {
 		return nil, fmt.Errorf("file too small for GB header: %d bytes", size)
 	}
@@ -111,14 +97,6 @@ func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
 	header := make([]byte, gbHeaderSize)
 	if _, err := r.ReadAt(header, gbHeaderStart); err != nil {
 		return nil, fmt.Errorf("failed to read GB header: %w", err)
-	}
-
-	// Verify Nintendo Logo (at least first 24 bytes for CGB compatibility)
-	logoStart := gbLogoOffset - gbHeaderStart
-	for i := 0; i < 24; i++ {
-		if header[logoStart+i] != gbNintendoLogo[i] {
-			return nil, fmt.Errorf("not a valid GB ROM: Nintendo logo mismatch at byte %d", i)
-		}
 	}
 
 	// Extract CGB flag to determine title length
@@ -194,29 +172,9 @@ func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
 	}, nil
 }
 
-// IsGBROM checks if the data contains the Nintendo Logo at the expected offset.
-// This is the most reliable way to detect GB/GBC ROMs.
-func IsGBROM(r io.ReaderAt, size int64) bool {
-	if size < gbLogoOffset+gbLogoSize {
-		return false
-	}
-
-	logo := make([]byte, 24) // Check first 24 bytes (CGB only verifies these)
-	if _, err := r.ReadAt(logo, gbLogoOffset); err != nil {
-		return false
-	}
-
-	for i := range 24 {
-		if logo[i] != gbNintendoLogo[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // Identify verifies the format and extracts game identification from a GB/GBC ROM.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseGB(r, size)
+	info, err := parseGB(r, size)
 	if err != nil {
 		return nil, err
 	}

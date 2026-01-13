@@ -63,8 +63,8 @@ type MDInfo struct {
 	Regions       []byte // Region codes (J, U, E, or new-style hex)
 }
 
-// ParseMD extracts game information from a Mega Drive/Genesis ROM file.
-func ParseMD(r io.ReaderAt, size int64) (*MDInfo, error) {
+// parseMD extracts game information from a Mega Drive/Genesis ROM file.
+func parseMD(r io.ReaderAt, size int64) (*MDInfo, error) {
 	if size < mdHeaderStart+mdHeaderSize {
 		return nil, fmt.Errorf("file too small for Mega Drive header: %d bytes", size)
 	}
@@ -179,29 +179,9 @@ func isOldStyleRegion(b byte) bool {
 	}
 }
 
-// IsMDROM checks if the data at offset $100 contains "SEGA" indicating a Mega Drive ROM.
-func IsMDROM(r io.ReaderAt, size int64) bool {
-	if size < mdHeaderStart+mdSystemTypeLen {
-		return false
-	}
-
-	buf := make([]byte, mdSystemTypeLen)
-	if _, err := r.ReadAt(buf, mdHeaderStart); err != nil {
-		return false
-	}
-
-	// Check for "SEGA" anywhere in the system type field
-	// Common values: "SEGA MEGA DRIVE ", "SEGA GENESIS    ", " SEGA MEGA DRIVE", etc.
-	return strings.Contains(string(buf), "SEGA")
-}
-
 // Identify verifies the format and extracts game identification from a Mega Drive ROM.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	if !IsMDROM(r, size) {
-		return nil, fmt.Errorf("not a valid Mega Drive ROM")
-	}
-
-	info, err := ParseMD(r, size)
+	info, err := parseMD(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +248,7 @@ func decodeRegions(codes []byte) []game.Region {
 }
 
 // parseMDFromBytes extracts game information from raw Mega Drive ROM bytes.
-// This is used by both ParseMD (for raw ROMs) and ParseSMD (after de-interleaving).
+// This is used by both parseMD (for raw ROMs) and ParseSMD (after de-interleaving).
 func parseMDFromBytes(data []byte) (*MDInfo, error) {
 	if len(data) < mdHeaderStart+mdHeaderSize {
 		return nil, fmt.Errorf("data too small for Mega Drive header: %d bytes", len(data))

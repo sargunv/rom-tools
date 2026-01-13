@@ -47,8 +47,8 @@ type GBAInfo struct {
 	Version    int
 }
 
-// ParseGBA extracts game information from a GBA ROM file.
-func ParseGBA(r io.ReaderAt, size int64) (*GBAInfo, error) {
+// parseGBA extracts game information from a GBA ROM file.
+func parseGBA(r io.ReaderAt, size int64) (*GBAInfo, error) {
 	if size < gbaHeaderSize {
 		return nil, fmt.Errorf("file too small for GBA header: %d bytes", size)
 	}
@@ -93,7 +93,7 @@ func ParseGBA(r io.ReaderAt, size int64) (*GBAInfo, error) {
 
 // Identify verifies the format and extracts game identification from a GBA ROM.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseGBA(r, size)
+	info, err := parseGBA(r, size)
 	if err != nil {
 		return nil, err
 	}

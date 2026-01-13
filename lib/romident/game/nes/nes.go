@@ -83,8 +83,8 @@ type NESInfo struct {
 	IsNES20     bool // True if NES 2.0 format
 }
 
-// ParseNES extracts information from an NES ROM file (iNES or NES 2.0 format).
-func ParseNES(r io.ReaderAt, size int64) (*NESInfo, error) {
+// parseNES extracts information from an NES ROM file (iNES or NES 2.0 format).
+func parseNES(r io.ReaderAt, size int64) (*NESInfo, error) {
 	if size < nesHeaderSize {
 		return nil, fmt.Errorf("file too small for NES header: %d bytes", size)
 	}
@@ -155,7 +155,7 @@ func ParseNES(r io.ReaderAt, size int64) (*NESInfo, error) {
 // Identify verifies the format and extracts game identification from an NES ROM.
 // Note: iNES format doesn't include game title, so identification is limited.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseNES(r, size)
+	info, err := parseNES(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -173,37 +173,4 @@ func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
 		Regions:  []game.Region{region},
 		Extra:    info,
 	}, nil
-}
-
-// formatROMSize formats a ROM size in bytes to a human-readable string.
-func formatROMSize(bytes int) string {
-	if bytes == 0 {
-		return "0"
-	}
-	if bytes >= 1024*1024 {
-		return fmt.Sprintf("%d MiB", bytes/(1024*1024))
-	}
-	if bytes >= 1024 {
-		return fmt.Sprintf("%d KiB", bytes/1024)
-	}
-	return fmt.Sprintf("%d B", bytes)
-}
-
-// IsNESROM checks if the data starts with the iNES magic bytes.
-func IsNESROM(r io.ReaderAt, size int64) bool {
-	if size < nesHeaderSize {
-		return false
-	}
-
-	magic := make([]byte, nesMagicLen)
-	if _, err := r.ReadAt(magic, nesMagicOffset); err != nil {
-		return false
-	}
-
-	for i := 0; i < nesMagicLen; i++ {
-		if magic[i] != nesMagic[i] {
-			return false
-		}
-	}
-	return true
 }

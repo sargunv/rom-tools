@@ -39,9 +39,9 @@ const (
 	smdMagicByte9 = 0xBB  // Fixed value at offset 9
 )
 
-// IsSMDROM checks if the file has an SMD header.
+// isSMDROM checks if the file has an SMD header.
 // SMD files have a 512-byte header with specific magic bytes.
-func IsSMDROM(r io.ReaderAt, size int64) bool {
+func isSMDROM(r io.ReaderAt, size int64) bool {
 	if size < smdHeaderSize+smdBlockSize {
 		return false
 	}
@@ -111,11 +111,11 @@ func deinterleaveSMD(data []byte) []byte {
 
 // IdentifySMD verifies the format and extracts game identification from an SMD ROM.
 func IdentifySMD(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	if !IsSMDROM(r, size) {
+	if !isSMDROM(r, size) {
 		return nil, fmt.Errorf("not a valid SMD ROM")
 	}
 
-	info, err := ParseSMD(r, size)
+	info, err := parseSMD(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -123,9 +123,9 @@ func IdentifySMD(r io.ReaderAt, size int64) (*game.GameIdent, error) {
 	return mdInfoToGameIdent(info), nil
 }
 
-// ParseSMD extracts game information from an SMD (Super Magic Drive) ROM file.
+// parseSMD extracts game information from an SMD (Super Magic Drive) ROM file.
 // SMD files have a 512-byte header and interleaved data that needs de-interleaving.
-func ParseSMD(r io.ReaderAt, size int64) (*MDInfo, error) {
+func parseSMD(r io.ReaderAt, size int64) (*MDInfo, error) {
 	if size < smdHeaderSize+smdBlockSize {
 		return nil, fmt.Errorf("file too small for SMD format: %d bytes", size)
 	}

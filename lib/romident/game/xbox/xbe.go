@@ -74,7 +74,7 @@ type XboxInfo struct {
 
 // IdentifyXBE verifies the format and extracts game identification from an XBE file.
 func IdentifyXBE(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseXBE(r, size)
+	info, err := parseXBE(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -118,15 +118,15 @@ func decodeRegions(flags uint32) []game.Region {
 	return regions
 }
 
-// ParseXBE extracts game information from an XBE file.
+// parseXBE extracts game information from an XBE file.
 // The file should start at offset 0 (for standalone .xbe files).
-func ParseXBE(r io.ReaderAt, size int64) (*XboxInfo, error) {
-	return ParseXBEAt(r, 0)
+func parseXBE(r io.ReaderAt, size int64) (*XboxInfo, error) {
+	return parseXBEAt(r, 0)
 }
 
-// ParseXBEAt extracts game information from an XBE file at the given offset.
+// parseXBEAt extracts game information from an XBE file at the given offset.
 // This is useful when the XBE is embedded within another file (e.g., in an XISO).
-func ParseXBEAt(r io.ReaderAt, xbeOffset int64) (*XboxInfo, error) {
+func parseXBEAt(r io.ReaderAt, xbeOffset int64) (*XboxInfo, error) {
 	// Read XBE header
 	header := make([]byte, xbeHeaderSize)
 	if _, err := r.ReadAt(header, xbeOffset); err != nil {

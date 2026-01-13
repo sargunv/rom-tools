@@ -1,11 +1,10 @@
-package test
+package romident
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/sargunv/rom-tools/internal/testutil"
-	"github.com/sargunv/rom-tools/lib/romident"
 	"github.com/sargunv/rom-tools/lib/romident/game"
 )
 
@@ -13,13 +12,13 @@ import (
 func TestIdentifyGBA(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "AGB_Rogue.gba")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
 
-	if rom.Type != romident.ROMTypeFile {
-		t.Errorf("Expected type %s, got %s", romident.ROMTypeFile, rom.Type)
+	if rom.Type != ROMTypeFile {
+		t.Errorf("Expected type %s, got %s", ROMTypeFile, rom.Type)
 	}
 
 	if rom.Ident == nil {
@@ -47,7 +46,7 @@ func TestIdentifyGBA(t *testing.T) {
 func TestIdentifyNDS(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "MixedCubes.nds")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -68,7 +67,7 @@ func TestIdentifyNDS(t *testing.T) {
 func TestIdentifyNES(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "BombSweeper.nes")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -86,7 +85,7 @@ func TestIdentifyNES(t *testing.T) {
 func TestIdentifySNES(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "col15.sfc")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -104,7 +103,7 @@ func TestIdentifySNES(t *testing.T) {
 func TestIdentifyGB(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "gbtictac.gb")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -126,7 +125,7 @@ func TestIdentifyGB(t *testing.T) {
 func TestIdentifyGBC(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "JUMPMAN86.GBC")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -144,7 +143,7 @@ func TestIdentifyGBC(t *testing.T) {
 func TestIdentifyN64_Z64(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "flames.z64")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -162,7 +161,7 @@ func TestIdentifyN64_Z64(t *testing.T) {
 func TestIdentifyN64_V64(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "flames.v64")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -180,7 +179,7 @@ func TestIdentifyN64_V64(t *testing.T) {
 func TestIdentifyN64_N64(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "flames.n64")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -198,7 +197,7 @@ func TestIdentifyN64_N64(t *testing.T) {
 func TestIdentifyMD(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "Censor_Intro.md")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -216,7 +215,7 @@ func TestIdentifyMD(t *testing.T) {
 func TestIdentifySMD(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "Censor_Intro.smd")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -234,7 +233,7 @@ func TestIdentifySMD(t *testing.T) {
 func TestIdentifyXBE(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "xromwell", "default.xbe")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -256,7 +255,7 @@ func TestIdentifyXBE(t *testing.T) {
 func TestIdentifyXISO(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "xromwell.xiso.iso")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -278,13 +277,13 @@ func TestIdentifyXISO(t *testing.T) {
 func TestIdentifyZIPSlowMode(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "AGB_Rogue.gba.zip")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{HashMode: romident.HashModeSlow})
+	rom, err := IdentifyROM(romPath, Options{HashMode: HashModeSlow})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
 
-	if rom.Type != romident.ROMTypeZIP {
-		t.Errorf("Expected type %s, got %s", romident.ROMTypeZIP, rom.Type)
+	if rom.Type != ROMTypeZIP {
+		t.Errorf("Expected type %s, got %s", ROMTypeZIP, rom.Type)
 	}
 
 	if rom.Ident == nil {
@@ -304,13 +303,13 @@ func TestIdentifyZIPSlowMode(t *testing.T) {
 func TestIdentifyFolder(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "xromwell")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{})
+	rom, err := IdentifyROM(romPath, Options{})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
 
-	if rom.Type != romident.ROMTypeFolder {
-		t.Errorf("Expected type %s, got %s", romident.ROMTypeFolder, rom.Type)
+	if rom.Type != ROMTypeFolder {
+		t.Errorf("Expected type %s, got %s", ROMTypeFolder, rom.Type)
 	}
 
 	if rom.Ident == nil {
@@ -326,7 +325,7 @@ func TestIdentifyFolder(t *testing.T) {
 func TestIdentifyLooseFile_Hashing(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "gbtictac.gb")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{HashMode: romident.HashModeDefault})
+	rom, err := IdentifyROM(romPath, Options{HashMode: HashModeDefault})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -345,9 +344,9 @@ func TestIdentifyLooseFile_Hashing(t *testing.T) {
 	}
 
 	// Verify SHA1 hash
-	var sha1Hash *romident.Hash
+	var sha1Hash *Hash
 	for i := range file.Hashes {
-		if file.Hashes[i].Algorithm == romident.HashSHA1 {
+		if file.Hashes[i].Algorithm == HashSHA1 {
 			sha1Hash = &file.Hashes[i]
 			break
 		}
@@ -364,7 +363,7 @@ func TestIdentifyLooseFile_Hashing(t *testing.T) {
 func TestIdentifyZIP_Hashing(t *testing.T) {
 	romPath := filepath.Join(testutil.ROMsPath(t), "gbtictac.gb.zip")
 
-	rom, err := romident.IdentifyROM(romPath, romident.Options{HashMode: romident.HashModeDefault})
+	rom, err := IdentifyROM(romPath, Options{HashMode: HashModeDefault})
 	if err != nil {
 		t.Fatalf("IdentifyROM() error = %v", err)
 	}
@@ -380,7 +379,7 @@ func TestIdentifyZIP_Hashing(t *testing.T) {
 	}
 
 	crc32Hash := file.Hashes[0]
-	if crc32Hash.Algorithm != romident.HashCRC32 {
+	if crc32Hash.Algorithm != HashCRC32 {
 		t.Errorf("Expected CRC32 hash, got %s", crc32Hash.Algorithm)
 	}
 	if crc32Hash.Value != "775ae755" {

@@ -64,8 +64,8 @@ type N64Info struct {
 	ByteOrder    N64ByteOrder // Detected byte ordering
 }
 
-// ParseN64 extracts game information from an N64 ROM file.
-func ParseN64(r io.ReaderAt, size int64) (*N64Info, error) {
+// parseN64 extracts game information from an N64 ROM file.
+func parseN64(r io.ReaderAt, size int64) (*N64Info, error) {
 	if size < n64HeaderSize {
 		return nil, fmt.Errorf("file too small for N64 header: %d bytes", size)
 	}
@@ -156,16 +156,6 @@ func swapBytes32(data []byte) {
 	}
 }
 
-// IsN64ROM checks if the first 4 bytes indicate an N64 ROM (any byte order).
-func IsN64ROM(first4 []byte) bool {
-	if len(first4) < 4 {
-		return false
-	}
-	return first4[0] == n64ReservedByte ||
-		first4[1] == n64ReservedByte ||
-		first4[3] == n64ReservedByte
-}
-
 // DetectN64ByteOrder returns the specific N64 format (Z64, V64, or N64) based on byte order.
 func DetectN64ByteOrder(first4 []byte) N64ByteOrder {
 	switch {
@@ -212,7 +202,7 @@ func identifyN64WithOrder(r io.ReaderAt, size int64, expectedOrder N64ByteOrder)
 		return nil, fmt.Errorf("byte order mismatch: expected %s, got %s", expectedOrder, actualOrder)
 	}
 
-	info, err := ParseN64(r, size)
+	info, err := parseN64(r, size)
 	if err != nil {
 		return nil, err
 	}

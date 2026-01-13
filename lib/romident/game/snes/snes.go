@@ -82,8 +82,8 @@ type SNESInfo struct {
 	HasCopierHeader    bool // True if 512-byte copier header was detected
 }
 
-// ParseSNES extracts information from a SNES ROM file.
-func ParseSNES(r io.ReaderAt, size int64) (*SNESInfo, error) {
+// parseSNES extracts information from a SNES ROM file.
+func parseSNES(r io.ReaderAt, size int64) (*SNESInfo, error) {
 	// Determine if there's a copier header (file size % 1024 == 512)
 	hasCopierHeader := (size % 1024) == snesCopierHeaderSize
 	copierOffset := int64(0)
@@ -226,22 +226,9 @@ func extractSNESTitle(data []byte) string {
 	return string(data[:end])
 }
 
-// IsSNESROM checks if the data has a valid SNES ROM structure.
-func IsSNESROM(r io.ReaderAt, size int64) bool {
-	// Minimum size check (need at least LoROM header offset + header size)
-	minSize := int64(snesLoROMOffset + snesHeaderSize)
-	if size < minSize {
-		return false
-	}
-
-	// Try to parse - if successful, it's likely a SNES ROM
-	_, err := ParseSNES(r, size)
-	return err == nil
-}
-
 // Identify verifies the format and extracts game identification from a SNES ROM.
 func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
-	info, err := ParseSNES(r, size)
+	info, err := parseSNES(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -255,26 +242,6 @@ func Identify(r io.ReaderAt, size int64) (*game.GameIdent, error) {
 		Version:  &version,
 		Extra:    info,
 	}, nil
-}
-
-// decodeMapMode converts a SNES map mode byte to a human-readable string.
-func decodeMapMode(mode SNESMapMode) string {
-	switch mode {
-	case SNESMapModeLoROM:
-		return "LoROM"
-	case SNESMapModeHiROM:
-		return "HiROM"
-	case SNESMapModeLoROMSA1:
-		return "LoROM+SA-1"
-	case SNESMapModeExLoROM:
-		return "ExLoROM"
-	case SNESMapModeExHiROM:
-		return "ExHiROM"
-	case SNESMapModeHiROMSPC, SNESMapModeHiROMSPC2:
-		return "HiROM+SPC7110"
-	default:
-		return fmt.Sprintf("0x%02X", mode)
-	}
 }
 
 // decodeRegion converts a SNES destination code to a Region.
@@ -315,18 +282,4 @@ func decodeRegion(code byte) game.Region {
 	default:
 		return game.RegionUnknown
 	}
-}
-
-// formatROMSize formats a ROM size in bytes to a human-readable string.
-func formatROMSize(bytes int) string {
-	if bytes == 0 {
-		return "0"
-	}
-	if bytes >= 1024*1024 {
-		return fmt.Sprintf("%d MiB", bytes/(1024*1024))
-	}
-	if bytes >= 1024 {
-		return fmt.Sprintf("%d KiB", bytes/1024)
-	}
-	return fmt.Sprintf("%d B", bytes)
 }
