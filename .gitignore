@@ -1,4 +1,6 @@
 .env
+.claude
+.cursor
 
 # Binaries
 *.exe
