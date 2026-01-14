@@ -104,31 +104,8 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 		Platform:  core.PlatformGBA,
 		TitleID:   info.GameCode,
 		Title:     info.Title,
-		Regions:   []core.Region{decodeRegion(info.RegionCode)},
 		MakerCode: info.MakerCode,
 		Version:   &version,
 		Extra:     info,
 	}, nil
-}
-
-// decodeRegion converts a GBA region code byte to a Region.
-func decodeRegion(code byte) core.Region {
-	switch code {
-	case 'J':
-		return core.RegionJP
-	case 'E':
-		return core.RegionUS
-	case 'P':
-		return core.RegionEU
-	case 'F':
-		return core.RegionFR
-	case 'S':
-		return core.RegionES
-	case 'D':
-		return core.RegionDE
-	case 'I':
-		return core.RegionIT
-	default:
-		return core.RegionUnknown
-	}
 }

@@ -99,60 +99,14 @@ func IdentifyFromSystemArea(data []byte) *core.GameIdent {
 		}
 	}
 
-	// Decode regions from raw area symbols (positions matter, don't trim)
-	areaSymbolsRaw := string(data[areaOffset : areaOffset+areaSize])
-
 	return &core.GameIdent{
 		Platform:   core.PlatformDreamcast,
 		TitleID:    productNumber,
 		Title:      title,
-		Regions:    decodeRegions(areaSymbolsRaw),
 		MakerCode:  extractMakerCode(info.MakerID),
 		DiscNumber: discNumber,
 		Extra:      info,
 	}
-}
-
-// decodeRegions converts Dreamcast area symbols to regions.
-// The 8-character area symbols field uses positions for regions:
-// Position 0: Japan, Position 1: USA, Position 2: Europe, etc.
-// A letter at a position means supported; a space means unsupported.
-func decodeRegions(areaSymbols string) []core.Region {
-	var regions []core.Region
-
-	// Area symbols are positional - check each position
-	for i, c := range areaSymbols {
-		if c == ' ' {
-			continue
-		}
-		switch i {
-		case 0: // Japan
-			regions = append(regions, core.RegionJP)
-		case 1: // USA
-			regions = append(regions, core.RegionUS)
-		case 2: // Europe
-			regions = append(regions, core.RegionEU)
-		// Positions 3-7 are less common regions (Taiwan, etc.)
-		// For now, map them to closest standard region
-		case 3, 4, 5, 6, 7:
-			// Asia/other regions - could be more specific but this covers basics
-		}
-	}
-
-	// Deduplicate
-	seen := make(map[core.Region]bool)
-	unique := make([]core.Region, 0, len(regions))
-	for _, r := range regions {
-		if !seen[r] {
-			seen[r] = true
-			unique = append(unique, r)
-		}
-	}
-
-	if len(unique) == 0 {
-		return []core.Region{core.RegionUnknown}
-	}
-	return unique
 }
 
 // extractMakerCode extracts the maker code from the Maker ID field.

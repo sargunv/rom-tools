@@ -160,17 +160,8 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 		return nil, err
 	}
 
-	// Determine region from TV system
-	var region core.Region
-	if info.TVSystem == NESTVSystemPAL {
-		region = core.RegionPAL
-	} else {
-		region = core.RegionNTSC
-	}
-
 	return &core.GameIdent{
 		Platform: core.PlatformNES,
-		Regions:  []core.Region{region},
 		Extra:    info,
 	}, nil
 }

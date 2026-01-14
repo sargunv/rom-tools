@@ -154,51 +154,8 @@ func N64InfoToGameIdent(info *N64Info) *core.GameIdent {
 		Platform: core.PlatformN64,
 		TitleID:  info.GameCode,
 		Title:    info.Title,
-		Regions:  []core.Region{decodeRegion(info.RegionCode)},
 		Version:  &version,
 		Extra:    info,
-	}
-}
-
-// decodeRegion converts an N64 destination code byte to a Region.
-func decodeRegion(code byte) core.Region {
-	switch code {
-	case 'A':
-		return core.RegionWorld
-	case 'B':
-		return core.RegionBR
-	case 'C':
-		return core.RegionCN
-	case 'D':
-		return core.RegionDE
-	case 'E':
-		return core.RegionUS
-	case 'F':
-		return core.RegionFR
-	case 'G':
-		return core.RegionNTSC
-	case 'H':
-		return core.RegionNL
-	case 'I':
-		return core.RegionIT
-	case 'J':
-		return core.RegionJP
-	case 'K':
-		return core.RegionKR
-	case 'L':
-		return core.RegionPAL
-	case 'N':
-		return core.RegionCA
-	case 'P', 'X', 'Y', 'Z':
-		return core.RegionEU
-	case 'S':
-		return core.RegionES
-	case 'U':
-		return core.RegionAU
-	case 'W':
-		return core.RegionNordic
-	default:
-		return core.RegionUnknown
 	}
 }
 

@@ -94,56 +94,10 @@ func IdentifyFromSystemArea(data []byte) *core.GameIdent {
 		Platform:   core.PlatformSaturn,
 		TitleID:    info.ProductNumber,
 		Title:      title,
-		Regions:    decodeRegions(info.AreaSymbols),
 		MakerCode:  extractMakerCode(info.MakerID),
 		DiscNumber: discNumber,
 		Extra:      info,
 	}
-}
-
-// decodeRegions converts Saturn area symbols to regions.
-// Saturn uses single-character codes: J, T, U, B, K, A, E, L
-func decodeRegions(areaSymbols string) []core.Region {
-	var regions []core.Region
-
-	for _, c := range areaSymbols {
-		switch c {
-		case 'J':
-			regions = append(regions, core.RegionJP)
-		case 'T':
-			// Asia (NTSC) - often includes Taiwan
-			regions = append(regions, core.RegionJP) // Grouped with Japan for NTSC-J
-		case 'U':
-			regions = append(regions, core.RegionUS)
-		case 'B':
-			regions = append(regions, core.RegionBR)
-		case 'K':
-			regions = append(regions, core.RegionKR)
-		case 'A':
-			// Asia (PAL)
-			regions = append(regions, core.RegionEU)
-		case 'E':
-			regions = append(regions, core.RegionEU)
-		case 'L':
-			// Latin America
-			regions = append(regions, core.RegionUS)
-		}
-	}
-
-	// Deduplicate
-	seen := make(map[core.Region]bool)
-	unique := make([]core.Region, 0, len(regions))
-	for _, r := range regions {
-		if !seen[r] {
-			seen[r] = true
-			unique = append(unique, r)
-		}
-	}
-
-	if len(unique) == 0 {
-		return []core.Region{core.RegionUnknown}
-	}
-	return unique
 }
 
 // extractMakerCode extracts the maker code from the Maker ID field.

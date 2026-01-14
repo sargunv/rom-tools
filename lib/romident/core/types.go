@@ -38,16 +38,14 @@ type GameIdent struct {
 	Platform   Platform `json:"platform"`
 	TitleID    string   `json:"title_id,omitempty"`
 	Title      string   `json:"title,omitempty"`
-	Regions    []Region `json:"regions,omitempty"`
 	MakerCode  string   `json:"maker_code,omitempty"`
 	Version    *int     `json:"version,omitempty"`
 	DiscNumber *int     `json:"disc_number,omitempty"`
 	Extra      any      `json:"extra,omitempty"`
 }
 
-// Equal returns true if two GameIdent values represent the same game.
-// Compares core identification fields (Platform, TitleID, Title, Regions, MakerCode,
-// Version, DiscNumber) but ignores Extra since it may contain format-specific metadata.
+// Equal returns true if two GameIdent values are identical,
+// TODO don't ignore Extra
 func (g *GameIdent) Equal(other *GameIdent) bool {
 	if g == nil || other == nil {
 		return g == other
@@ -78,48 +76,8 @@ func (g *GameIdent) Equal(other *GameIdent) bool {
 	if g.DiscNumber != nil && *g.DiscNumber != *other.DiscNumber {
 		return false
 	}
-	// Compare Regions slices
-	if len(g.Regions) != len(other.Regions) {
-		return false
-	}
-	for i, r := range g.Regions {
-		if r != other.Regions[i] {
-			return false
-		}
-	}
 	return true
 }
-
-// Region represents a game region using ISO country codes, continent codes, and some other non-country codes.
-type Region string
-
-const (
-	RegionJP Region = "JP" // Japan
-	RegionUS Region = "US" // USA
-	RegionFR Region = "FR" // France
-	RegionES Region = "ES" // Spain
-	RegionDE Region = "DE" // Germany
-	RegionIT Region = "IT" // Italy
-	RegionAU Region = "AU" // Australia
-	RegionBR Region = "BR" // Brazil
-	RegionCN Region = "CN" // China
-	RegionNL Region = "NL" // Netherlands
-	RegionKR Region = "KR" // Korea
-	RegionCA Region = "CA" // Canada
-	RegionSE Region = "SE" // Sweden
-	RegionFI Region = "FI" // Finland
-	RegionDK Region = "DK" // Denmark
-
-	RegionNA     Region = "NA"     // North America
-	RegionEU     Region = "EU"     // Europe
-	RegionNordic Region = "Nordic" // Scandinavia
-
-	RegionNTSC Region = "NTSC"
-	RegionPAL  Region = "PAL"
-
-	RegionWorld   Region = "World"
-	RegionUnknown Region = "Unknown"
-)
 
 // Platform represents a gaming platform.
 type Platform string

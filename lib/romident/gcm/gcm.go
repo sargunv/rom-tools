@@ -142,40 +142,9 @@ func GCInfoToGameIdent(info *GCInfo, extra any) *core.GameIdent {
 		Platform:   platform,
 		TitleID:    titleID,
 		Title:      info.Title,
-		Regions:    []core.Region{decodeRegion(info.RegionCode)},
 		MakerCode:  info.MakerCode,
 		Version:    &version,
 		DiscNumber: &discNumber,
 		Extra:      extra,
-	}
-}
-
-// decodeRegion converts a GameCube/Wii region code byte to a Region.
-func decodeRegion(code byte) core.Region {
-	switch code {
-	case 'D':
-		return core.RegionDE
-	case 'E':
-		return core.RegionUS
-	case 'F':
-		return core.RegionFR
-	case 'I':
-		return core.RegionIT
-	case 'J':
-		return core.RegionJP
-	case 'K':
-		return core.RegionKR
-	case 'P':
-		return core.RegionEU
-	case 'R':
-		return core.RegionUnknown // Russia - not in current Region constants
-	case 'S':
-		return core.RegionES
-	case 'T':
-		return core.RegionUnknown // Taiwan - not in current Region constants
-	case 'U':
-		return core.RegionAU
-	default:
-		return core.RegionUnknown
 	}
 }

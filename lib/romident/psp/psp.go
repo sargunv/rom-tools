@@ -60,7 +60,6 @@ func IdentifyFromSFO(data []byte) *core.GameIdent {
 		Platform: core.PlatformPSP,
 		TitleID:  normalizedID,
 		Title:    info.Title,
-		Regions:  []core.Region{decodeRegion(discID)},
 		Extra:    info,
 	}
 }
@@ -76,28 +75,4 @@ func normalizeDiscID(discID string) string {
 		return discID[:4] + "-" + discID[4:]
 	}
 	return discID
-}
-
-// decodeRegion maps a PSP disc ID prefix to a region.
-func decodeRegion(discID string) core.Region {
-	if len(discID) < 4 {
-		return core.RegionUnknown
-	}
-
-	prefix := strings.ToUpper(discID[:4])
-
-	switch prefix {
-	case "ULUS", "UCUS", "NPUG", "NPUH", "NPUZ":
-		return core.RegionUS
-	case "ULES", "UCES", "NPEG", "NPEH", "NPEZ":
-		return core.RegionEU
-	case "ULJS", "UCJS", "NPJG", "NPJH":
-		return core.RegionJP
-	case "ULAS", "UCAS", "NPAG", "NPAH":
-		return core.RegionJP // Asia, often JP-compatible
-	case "ULKS", "UCKS", "NPHG", "NPHH":
-		return core.RegionKR
-	default:
-		return core.RegionUnknown
-	}
 }

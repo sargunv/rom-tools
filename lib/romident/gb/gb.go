@@ -189,18 +189,9 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 		platform = core.PlatformGB
 	}
 
-	// Determine region from destination code
-	var region core.Region
-	if info.DestinationCode == 0x00 {
-		region = core.RegionJP
-	} else {
-		region = core.RegionWorld // Non-Japanese = worldwide
-	}
-
 	return &core.GameIdent{
 		Platform:  platform,
 		Title:     info.Title,
-		Regions:   []core.Region{region},
 		MakerCode: info.LicenseeCode,
 		Version:   &version,
 		Extra:     info,

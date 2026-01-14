@@ -74,7 +74,6 @@ type ROMFile struct {
 }
 
 type GameIdent = core.GameIdent
-type Region = core.Region
 type Platform = core.Platform
 
 // Files is a map of file path to file info.

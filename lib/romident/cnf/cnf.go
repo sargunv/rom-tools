@@ -53,7 +53,6 @@ func IdentifyFromSystemCNF(data []byte) *core.GameIdent {
 	return &core.GameIdent{
 		Platform: platform,
 		TitleID:  normalizedID,
-		Regions:  []core.Region{decodeRegion(info.DiscID)},
 		Extra:    info,
 	}
 }
@@ -126,28 +125,4 @@ func extractDiscID(bootPath string) string {
 	}
 
 	return filename
-}
-
-// decodeRegion maps a PlayStation disc ID prefix to a region.
-func decodeRegion(discID string) core.Region {
-	if len(discID) < 4 {
-		return core.RegionUnknown
-	}
-
-	prefix := strings.ToUpper(discID[:4])
-
-	switch prefix {
-	case "SLUS", "SCUS":
-		return core.RegionUS
-	case "SLES", "SCES":
-		return core.RegionEU
-	case "SLPS", "SCPS", "SLPM", "SCPM":
-		return core.RegionJP
-	case "SLKA", "SCKA":
-		return core.RegionKR
-	case "SLAJ": // Asia/Japan variant
-		return core.RegionJP
-	default:
-		return core.RegionUnknown
-	}
 }

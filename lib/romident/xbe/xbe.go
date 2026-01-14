@@ -54,10 +54,10 @@ const (
 type XboxRegion uint32
 
 const (
-	XboxRegionNA    XboxRegion = 0x00000001
-	XboxRegionJapan XboxRegion = 0x00000002
-	XboxRegionEUAU  XboxRegion = 0x00000004 // Europe and Australia
-	XboxRegionDebug XboxRegion = 0x80000000
+	XboxRegionNA    XboxRegion = 0x00000001 // North America (US + Canada)
+	XboxRegionJapan XboxRegion = 0x00000002 // Japan
+	XboxRegionEUAU  XboxRegion = 0x00000004 // Europe and Australia combined
+	XboxRegionDebug XboxRegion = 0x80000000 // Debug/development region
 )
 
 // XboxInfo contains metadata extracted from an Xbox XBE file.
@@ -92,30 +92,11 @@ func XboxInfoToGameIdent(info *XboxInfo) *core.GameIdent {
 		Platform:   core.PlatformXbox,
 		TitleID:    fmt.Sprintf("%s-%03d", info.PublisherCode, info.GameNumber),
 		Title:      info.Title,
-		Regions:    decodeRegions(info.RegionFlags),
 		MakerCode:  info.PublisherCode,
 		Version:    &version,
 		DiscNumber: &discNumber,
 		Extra:      info,
 	}
-}
-
-// decodeRegions converts Xbox region flags to a slice of Region.
-func decodeRegions(flags uint32) []core.Region {
-	var regions []core.Region
-	if flags&uint32(XboxRegionNA) != 0 {
-		regions = append(regions, core.RegionNA)
-	}
-	if flags&uint32(XboxRegionJapan) != 0 {
-		regions = append(regions, core.RegionJP)
-	}
-	if flags&uint32(XboxRegionEUAU) != 0 {
-		regions = append(regions, core.RegionEU, core.RegionAU)
-	}
-	if len(regions) == 0 {
-		regions = append(regions, core.RegionUnknown)
-	}
-	return regions
 }
 
 // parseXBE extracts game information from an XBE file.

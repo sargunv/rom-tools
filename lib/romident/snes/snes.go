@@ -238,48 +238,7 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 	return &core.GameIdent{
 		Platform: core.PlatformSNES,
 		Title:    info.Title,
-		Regions:  []core.Region{decodeRegion(info.DestinationCode)},
 		Version:  &version,
 		Extra:    info,
 	}, nil
-}
-
-// decodeRegion converts a SNES destination code to a Region.
-func decodeRegion(code byte) core.Region {
-	switch code {
-	case 0x00:
-		return core.RegionJP
-	case 0x01:
-		return core.RegionNA
-	case 0x02:
-		return core.RegionEU
-	case 0x03:
-		return core.RegionSE
-	case 0x04:
-		return core.RegionFI
-	case 0x05:
-		return core.RegionDK
-	case 0x06:
-		return core.RegionFR
-	case 0x07:
-		return core.RegionNL
-	case 0x08:
-		return core.RegionES
-	case 0x09:
-		return core.RegionDE
-	case 0x0A:
-		return core.RegionIT
-	case 0x0B:
-		return core.RegionCN
-	case 0x0D:
-		return core.RegionKR
-	case 0x0F:
-		return core.RegionCA
-	case 0x10:
-		return core.RegionBR
-	case 0x11:
-		return core.RegionAU
-	default:
-		return core.RegionUnknown
-	}
 }

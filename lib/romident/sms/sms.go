@@ -140,9 +140,6 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 	// Determine platform from region code
 	platform := determinePlatform(info.RegionCode)
 
-	// Decode region
-	regions := decodeRegion(info.RegionCode)
-
 	// Build version pointer
 	var version *int
 	if info.Version > 0 {
@@ -153,7 +150,6 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 	return &core.GameIdent{
 		Platform: platform,
 		TitleID:  info.ProductCode,
-		Regions:  regions,
 		Version:  version,
 		Extra:    info,
 	}, nil
@@ -169,25 +165,5 @@ func determinePlatform(regionCode byte) core.Platform {
 	default:
 		// Unknown region code - default to Master System
 		return core.PlatformMS
-	}
-}
-
-// decodeRegion converts the region code to a slice of Region constants.
-func decodeRegion(regionCode byte) []core.Region {
-	switch regionCode {
-	case regionJapanSMS:
-		return []core.Region{core.RegionJP}
-	case regionExportSMS:
-		// Export SMS was released in US, Europe, and Brazil
-		return []core.Region{core.RegionUS, core.RegionEU, core.RegionBR}
-	case regionJapanGG:
-		return []core.Region{core.RegionJP}
-	case regionExportGG:
-		// Export GG primarily US market
-		return []core.Region{core.RegionUS}
-	case regionIntlGG:
-		return []core.Region{core.RegionWorld}
-	default:
-		return []core.Region{core.RegionUnknown}
 	}
 }

@@ -145,39 +145,8 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 		Platform:  platform,
 		TitleID:   info.GameCode,
 		Title:     info.Title,
-		Regions:   []core.Region{decodeRegion(info.RegionCode)},
 		MakerCode: info.MakerCode,
 		Version:   &version,
 		Extra:     info,
 	}, nil
-}
-
-// decodeRegion converts an NDS region code byte to a Region.
-func decodeRegion(code byte) core.Region {
-	switch code {
-	case 'J':
-		return core.RegionJP
-	case 'E':
-		return core.RegionUS
-	case 'P':
-		return core.RegionEU
-	case 'D':
-		return core.RegionDE
-	case 'F':
-		return core.RegionFR
-	case 'I':
-		return core.RegionIT
-	case 'S':
-		return core.RegionES
-	case 'K':
-		return core.RegionKR
-	case 'C':
-		return core.RegionCN
-	case 'A':
-		return core.RegionWorld
-	case 'U':
-		return core.RegionAU
-	default:
-		return core.RegionUnknown
-	}
 }

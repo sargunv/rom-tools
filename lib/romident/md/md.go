@@ -193,53 +193,12 @@ func MDInfoToGameIdent(info *MDInfo) *core.GameIdent {
 		title = info.DomesticTitle
 	}
 
-	// Decode regions
-	regions := decodeRegions(info.Regions)
-
 	return &core.GameIdent{
 		Platform: core.PlatformMD,
 		TitleID:  info.SerialNumber,
 		Title:    title,
-		Regions:  regions,
 		Extra:    info,
 	}
-}
-
-// decodeRegions converts Mega Drive region codes to a slice of Region.
-func decodeRegions(codes []byte) []core.Region {
-	var regions []core.Region
-	seen := make(map[core.Region]bool)
-
-	for _, code := range codes {
-		var region core.Region
-		switch code {
-		case 'J', '1':
-			region = core.RegionJP
-		case 'U', '4', '8':
-			region = core.RegionUS
-		case 'E':
-			region = core.RegionEU
-		case 'A':
-			region = core.RegionWorld
-		case 'B':
-			region = core.RegionBR
-		case 'K':
-			region = core.RegionKR
-		default:
-			continue
-		}
-
-		if !seen[region] {
-			seen[region] = true
-			regions = append(regions, region)
-		}
-	}
-
-	if len(regions) == 0 {
-		regions = append(regions, core.RegionUnknown)
-	}
-
-	return regions
 }
 
 // ParseMDFromBytes extracts game information from raw Mega Drive ROM bytes.
