@@ -19,13 +19,13 @@ Supports:
   - Nintendo 3DS: TODO
   - Sega Master System: TODO
   - Sega Mega Drive / Genesis: .md, .gen, .smd
-  - Sega Saturn: TODO
+  - Sega Saturn: .bin/cue
   - Sega Dreamcast: TODO
   - Sega Game Gear: TODO
   - Sony PlayStation 1: .bin/cue
   - Sony PlayStation 2: .iso, .bin/cue
-  - Sony PlayStation Portable: TODO
-  - Microsoft Xbox: .xiso, .xiso.iso, and .xbe
+  - Sony PlayStation Portable: .iso
+  - Microsoft Xbox: .xiso.iso, .xbe
 - .chd discs: extracts SHA1 hashes from header (fast, no decompression)
 - .zip archives: extracts CRC32 from metadata (fast, no decompression). If in slow mode, also identifies files within the ZIP.
 - all files: calculates SHA1, MD5, CRC32 (unless in fast mode).

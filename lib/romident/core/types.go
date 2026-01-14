@@ -25,7 +25,6 @@ const (
 	FormatSNES    Format = "snes"
 	FormatGCM     Format = "gcm" // GameCube/Wii uncompressed disc
 	FormatRVZ     Format = "rvz" // GameCube/Wii RVZ/WIA compressed disc
-	FormatBIN     Format = "bin" // Raw CD image (PS1/PS2)
 )
 
 // IdentifyFunc is the signature for format-specific identification functions.
