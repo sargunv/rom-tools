@@ -43,6 +43,51 @@ type GameIdent struct {
 	Extra      any      `json:"extra,omitempty"`
 }
 
+// Equal returns true if two GameIdent values represent the same game.
+// Compares core identification fields (Platform, TitleID, Title, Regions, MakerCode,
+// Version, DiscNumber) but ignores Extra since it may contain format-specific metadata.
+func (g *GameIdent) Equal(other *GameIdent) bool {
+	if g == nil || other == nil {
+		return g == other
+	}
+	if g.Platform != other.Platform {
+		return false
+	}
+	if g.TitleID != other.TitleID {
+		return false
+	}
+	if g.Title != other.Title {
+		return false
+	}
+	if g.MakerCode != other.MakerCode {
+		return false
+	}
+	// Compare Version pointers
+	if (g.Version == nil) != (other.Version == nil) {
+		return false
+	}
+	if g.Version != nil && *g.Version != *other.Version {
+		return false
+	}
+	// Compare DiscNumber pointers
+	if (g.DiscNumber == nil) != (other.DiscNumber == nil) {
+		return false
+	}
+	if g.DiscNumber != nil && *g.DiscNumber != *other.DiscNumber {
+		return false
+	}
+	// Compare Regions slices
+	if len(g.Regions) != len(other.Regions) {
+		return false
+	}
+	for i, r := range g.Regions {
+		if r != other.Regions[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // Region represents a game region using ISO country codes, continent codes, and some other non-country codes.
 type Region string
 

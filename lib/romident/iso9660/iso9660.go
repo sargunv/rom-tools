@@ -8,6 +8,7 @@ import (
 
 	"github.com/sargunv/rom-tools/lib/romident/cnf"
 	"github.com/sargunv/rom-tools/lib/romident/core"
+	"github.com/sargunv/rom-tools/lib/romident/dreamcast"
 	"github.com/sargunv/rom-tools/lib/romident/psp"
 	"github.com/sargunv/rom-tools/lib/romident/saturn"
 )
@@ -55,9 +56,12 @@ func Identify(r io.ReaderAt, size int64) (*core.GameIdent, error) {
 
 func (img *image) identify() (*core.GameIdent, error) {
 
-	// Try to read system area (sectors 0-15) for Saturn identification
+	// Try to read system area (sectors 0-15) for Saturn/Dreamcast identification
 	if data, err := img.readSystemArea(); err == nil {
 		if ident := saturn.IdentifyFromSystemArea(data); ident != nil {
+			return ident, nil
+		}
+		if ident := dreamcast.IdentifyFromSystemArea(data); ident != nil {
 			return ident, nil
 		}
 	}

@@ -69,9 +69,9 @@ func identifyContainer(c core.Container, containerType ROMType, containerPath st
 			}
 		}
 
-		// Collect identification (error if multiple identifications found)
+		// Collect identification (error if multiple conflicting identifications found)
 		if fileIdent != nil {
-			if romIdent != nil {
+			if romIdent != nil && !romIdent.Equal(fileIdent) {
 				reader.Close()
 				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.TitleID, fileIdent.TitleID)
 			}
