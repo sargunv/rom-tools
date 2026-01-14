@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/sargunv/rom-tools/lib/romident/chd"
 	"github.com/sargunv/rom-tools/lib/romident/core"
@@ -71,7 +72,7 @@ func identifyContainer(c core.Container, containerType ROMType, containerPath st
 
 		// Collect identification (error if multiple conflicting identifications found)
 		if fileIdent != nil {
-			if romIdent != nil && !romIdent.Equal(fileIdent) {
+			if romIdent != nil && !reflect.DeepEqual(romIdent, fileIdent) {
 				reader.Close()
 				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.TitleID, fileIdent.TitleID)
 			}

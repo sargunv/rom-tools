@@ -44,41 +44,6 @@ type GameIdent struct {
 	Extra      any      `json:"extra,omitempty"`
 }
 
-// Equal returns true if two GameIdent values are identical,
-// TODO don't ignore Extra
-func (g *GameIdent) Equal(other *GameIdent) bool {
-	if g == nil || other == nil {
-		return g == other
-	}
-	if g.Platform != other.Platform {
-		return false
-	}
-	if g.TitleID != other.TitleID {
-		return false
-	}
-	if g.Title != other.Title {
-		return false
-	}
-	if g.MakerCode != other.MakerCode {
-		return false
-	}
-	// Compare Version pointers
-	if (g.Version == nil) != (other.Version == nil) {
-		return false
-	}
-	if g.Version != nil && *g.Version != *other.Version {
-		return false
-	}
-	// Compare DiscNumber pointers
-	if (g.DiscNumber == nil) != (other.DiscNumber == nil) {
-		return false
-	}
-	if g.DiscNumber != nil && *g.DiscNumber != *other.DiscNumber {
-		return false
-	}
-	return true
-}
-
 // Platform represents a gaming platform.
 type Platform string
 
