@@ -100,7 +100,7 @@ func parseDreamcastBytes(data []byte) (*DreamcastInfo, error) {
 
 	// Parse release date
 	dateStr := util.ExtractASCII(data[dateOffset : dateOffset+dateSize])
-	releaseDate := parseDate(dateStr)
+	releaseDate := util.ParseYYYYMMDD(dateStr)
 
 	info := &DreamcastInfo{
 		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
@@ -116,17 +116,4 @@ func parseDreamcastBytes(data []byte) (*DreamcastInfo, error) {
 	}
 
 	return info, nil
-}
-
-// parseDate parses a date string in YYYYMMDD format.
-// Returns zero time if parsing fails.
-func parseDate(s string) time.Time {
-	if len(s) != 8 {
-		return time.Time{}
-	}
-	t, err := time.Parse("20060102", s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
 }

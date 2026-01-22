@@ -90,7 +90,7 @@ func parseSaturnBytes(data []byte) (*SaturnInfo, error) {
 
 	// Parse release date
 	dateStr := util.ExtractASCII(data[dateOffset : dateOffset+dateSize])
-	releaseDate := parseDate(dateStr)
+	releaseDate := util.ParseYYYYMMDD(dateStr)
 
 	info := &SaturnInfo{
 		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
@@ -99,22 +99,9 @@ func parseSaturnBytes(data []byte) (*SaturnInfo, error) {
 		Version:       util.ExtractASCII(data[versionOffset : versionOffset+versionSize]),
 		ReleaseDate:   releaseDate,
 		DeviceInfo:    util.ExtractASCII(data[deviceOffset : deviceOffset+deviceSize]),
-		AreaSymbols:   util.ExtractASCII(data[areaOffset : areaOffset+areaSize]),
+		AreaSymbols:   string(data[areaOffset : areaOffset+areaSize]), // Don't trim - positions matter
 		Peripherals:   util.ExtractASCII(data[peripheralOffset : peripheralOffset+peripheralSize]),
 	}
 
 	return info, nil
-}
-
-// parseDate parses a date string in YYYYMMDD format.
-// Returns zero time if parsing fails.
-func parseDate(s string) time.Time {
-	if len(s) != 8 {
-		return time.Time{}
-	}
-	t, err := time.Parse("20060102", s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
 }
