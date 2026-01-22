@@ -39,24 +39,39 @@ import (
 //   - Byte 3 (0x3E): Destination - J=Japan, E=USA, P=Europe, etc.
 
 const (
-	N64HeaderSize      = 0x40 // 64 bytes
-	n64ReservedByte    = 0x80
-	n64CheckCodeOffset = 0x10
-	n64TitleOffset     = 0x20
-	n64TitleLen        = 20
-	n64GameCodeOffset  = 0x3B
-	n64GameCodeLen     = 4
-	n64VersionOffset   = 0x3F
+	N64HeaderSize        = 0x40 // 64 bytes
+	n64ReservedByte      = 0x80
+	n64PIBSDConfigOffset = 0x01 // 3 bytes (0x01-0x03)
+	n64ClockRateOffset   = 0x04 // 4 bytes (0x04-0x07)
+	n64BootAddressOffset = 0x08 // 4 bytes (0x08-0x0B)
+	n64LibultraOffset    = 0x0C // 4 bytes (0x0C-0x0F)
+	n64CheckCodeOffset   = 0x10 // 8 bytes (0x10-0x17)
+	n64TitleOffset       = 0x20 // 20 bytes (0x20-0x33)
+	n64TitleLen          = 20
+	n64GameCodeOffset    = 0x3B // 4 bytes (0x3B-0x3E)
+	n64GameCodeLen       = 4
+	n64VersionOffset     = 0x3F // 1 byte
 )
 
 // N64ByteOrder represents the byte ordering of an N64 ROM.
+// N64 ROMs are distributed in three byte orderings, identifiable by where 0x80 appears
+// in the first 4 bytes. All commercial N64 ROMs begin with 0x80371240 in native format.
 type N64ByteOrder string
 
 const (
-	N64BigEndian    N64ByteOrder = "z64" // Native format, 0x80 at position 0
-	N64ByteSwapped  N64ByteOrder = "v64" // Byte-swapped pairs, 0x80 at position 1
-	N64LittleEndian N64ByteOrder = "n64" // Word-swapped, 0x80 at position 3
-	N64Unknown      N64ByteOrder = "unknown"
+	// N64BigEndian (.z64) is the native N64 format with no byte reordering.
+	// Bytes appear as: [0x80, 0x37, 0x12, 0x40] - 0x80 at position 0.
+	N64BigEndian N64ByteOrder = "z64"
+	// N64ByteSwapped (.v64) has each pair of bytes swapped (16-bit byte swap).
+	// Bytes appear as: [0x37, 0x80, 0x40, 0x12] - 0x80 at position 1.
+	// Conversion: swap adjacent bytes (AB CD -> BA DC).
+	N64ByteSwapped N64ByteOrder = "v64"
+	// N64LittleEndian (.n64) has each 32-bit word byte-reversed.
+	// Bytes appear as: [0x40, 0x12, 0x37, 0x80] - 0x80 at position 3.
+	// Conversion: reverse each 4-byte group (ABCD -> DCBA).
+	N64LittleEndian N64ByteOrder = "n64"
+	// N64Unknown indicates the byte order could not be detected.
+	N64Unknown N64ByteOrder = "unknown"
 )
 
 // N64CategoryCode represents the media type from the first byte of the game code.
@@ -100,9 +115,21 @@ const (
 
 // N64Info contains metadata extracted from an N64 ROM file.
 type N64Info struct {
-	// Title is the game title (space-padded ASCII, up to 20 characters).
+	// PIBSDConfig is the PI BSD DOM1 configuration flags (0x01-0x03, 24-bit).
+	// Controls ROM access timing for the Parallel Interface.
+	PIBSDConfig uint32
+	// ClockRate is the clock rate override value (0x04-0x07).
+	// Used by libultra for timing calculations; 0 means use default.
+	ClockRate uint32
+	// BootAddress is the program counter entry point in RDRAM (0x08-0x0B).
+	BootAddress uint32
+	// LibultraVersion is the SDK version used to build the ROM (0x0C-0x0F).
+	LibultraVersion uint32
+	// CheckCode is the 64-bit integrity check value (0x10-0x17).
+	CheckCode uint64
+	// Title is the game title (0x20-0x33, space-padded ASCII, up to 20 characters).
 	Title string
-	// GameCode is the full 4-character game code.
+	// GameCode is the full 4-character game code (0x3B-0x3E).
 	GameCode string
 	// CategoryCode is the media type: N=GamePak, D=64DD, C=Expandable, etc.
 	CategoryCode N64CategoryCode
@@ -110,12 +137,10 @@ type N64Info struct {
 	UniqueCode string
 	// Destination is the target region: J=Japan, E=USA, P=Europe, etc.
 	Destination N64Destination
-	// Version is the ROM version number.
+	// Version is the ROM version number (0x3F).
 	Version int
 	// ByteOrder is the detected byte ordering of the ROM.
 	ByteOrder N64ByteOrder
-	// CheckCode is the 64-bit integrity check value (big-endian at offset 0x10).
-	CheckCode uint64
 }
 
 // ParseN64 extracts game information from an N64 ROM file, auto-detecting byte order.
@@ -154,13 +179,27 @@ func ParseN64(r io.ReaderAt, size int64) (*N64Info, error) {
 
 // parseN64Header parses an N64 header from big-endian (z64) format bytes.
 func parseN64Header(header []byte, byteOrder N64ByteOrder) (*N64Info, error) {
-	// Extract check code (64-bit big-endian at offset 0x10)
+	// Extract PI BSD DOM1 config (24-bit at 0x01-0x03, stored in low 3 bytes)
+	piBSDConfig := uint32(header[n64PIBSDConfigOffset])<<16 |
+		uint32(header[n64PIBSDConfigOffset+1])<<8 |
+		uint32(header[n64PIBSDConfigOffset+2])
+
+	// Extract clock rate (32-bit at 0x04)
+	clockRate := binary.BigEndian.Uint32(header[n64ClockRateOffset:])
+
+	// Extract boot address (32-bit at 0x08)
+	bootAddress := binary.BigEndian.Uint32(header[n64BootAddressOffset:])
+
+	// Extract libultra version (32-bit at 0x0C)
+	libultraVersion := binary.BigEndian.Uint32(header[n64LibultraOffset:])
+
+	// Extract check code (64-bit at 0x10)
 	checkCode := binary.BigEndian.Uint64(header[n64CheckCodeOffset:])
 
-	// Extract title (space-padded ASCII)
+	// Extract title (space-padded ASCII at 0x20)
 	title := util.ExtractASCII(header[n64TitleOffset : n64TitleOffset+n64TitleLen])
 
-	// Extract game code
+	// Extract game code (4 bytes at 0x3B)
 	gameCode := util.ExtractASCII(header[n64GameCodeOffset : n64GameCodeOffset+n64GameCodeLen])
 
 	// Parse game code components
@@ -173,18 +212,22 @@ func parseN64Header(header []byte, byteOrder N64ByteOrder) (*N64Info, error) {
 		destination = N64Destination(gameCode[3])
 	}
 
-	// Extract ROM version
+	// Extract ROM version (1 byte at 0x3F)
 	version := int(header[n64VersionOffset])
 
 	return &N64Info{
-		Title:        title,
-		GameCode:     gameCode,
-		CategoryCode: categoryCode,
-		UniqueCode:   uniqueCode,
-		Destination:  destination,
-		Version:      version,
-		ByteOrder:    byteOrder,
-		CheckCode:    checkCode,
+		PIBSDConfig:     piBSDConfig,
+		ClockRate:       clockRate,
+		BootAddress:     bootAddress,
+		LibultraVersion: libultraVersion,
+		CheckCode:       checkCode,
+		Title:           title,
+		GameCode:        gameCode,
+		CategoryCode:    categoryCode,
+		UniqueCode:      uniqueCode,
+		Destination:     destination,
+		Version:         version,
+		ByteOrder:       byteOrder,
 	}, nil
 }
 
