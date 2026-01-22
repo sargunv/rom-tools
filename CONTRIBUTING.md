@@ -2,9 +2,7 @@
 
 ## Prerequisites
 
-This project uses Mise for managing development tools and dependencies. Install Mise if you haven't already:
-
-https://mise.jdx.dev/
+This project uses [Mise](https://mise.jdx.dev/) for managing development tools and dependencies.
 
 ## Setup
 
@@ -24,4 +22,4 @@ Run tests against the live API:
 
 Run the CLI:
 
-    mise screenscraper [args...]
+    mise rom-tools -- [args...]
