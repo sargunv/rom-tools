@@ -19,11 +19,18 @@ func TestParseSMD(t *testing.T) {
 		t.Fatalf("Failed to stat file: %v", err)
 	}
 
-	info, err := ParseSMD(file, stat.Size())
+	info, err := Parse(file, stat.Size())
 	if err != nil {
-		t.Fatalf("ParseSMD() error = %v", err)
+		t.Fatalf("Parse() error = %v", err)
 	}
 
-	// Verify parsing was successful
-	_ = info
+	// Verify SourceFormat is set correctly for SMD files
+	if info.SourceFormat != FormatSMD {
+		t.Errorf("SourceFormat = %v, want FormatSMD", info.SourceFormat)
+	}
+
+	// Verify basic parsing succeeded
+	if info.SystemType == "" {
+		t.Error("SystemType should not be empty")
+	}
 }

@@ -195,9 +195,12 @@ func identifySMS(r io.ReaderAt, size int64) (*GameIdent, error) {
 // MD, GCM, XBE: use helper functions
 
 func identifyMD(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := megadrive.ParseMD(r, size)
+	info, err := megadrive.Parse(r, size)
 	if err != nil {
 		return nil, err
+	}
+	if info.SourceFormat != megadrive.FormatMD {
+		return nil, fmt.Errorf("format mismatch: expected MD, got SMD")
 	}
 	return mdInfoToGameIdent(info), nil
 }
@@ -256,9 +259,12 @@ func identifyN64(r io.ReaderAt, size int64) (*GameIdent, error) {
 // Delegation: SMD->MD, RVZ->GCM, XISO->XBE, CHD->ISO9660
 
 func identifySMD(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := megadrive.ParseSMD(r, size)
+	info, err := megadrive.Parse(r, size)
 	if err != nil {
 		return nil, err
+	}
+	if info.SourceFormat != megadrive.FormatSMD {
+		return nil, fmt.Errorf("format mismatch: expected SMD, got MD")
 	}
 	return mdInfoToGameIdent(info), nil
 }
