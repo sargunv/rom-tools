@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/sargunv/rom-tools/internal/container/folder"
+	"github.com/sargunv/rom-tools/internal/container/zip"
 	"github.com/sargunv/rom-tools/internal/util"
 	"github.com/sargunv/rom-tools/lib/format/chd"
-	"github.com/sargunv/rom-tools/lib/format/folder"
-	"github.com/sargunv/rom-tools/lib/format/zip"
 )
 
 // IdentifyROM identifies a ROM file, ZIP archive, or folder.

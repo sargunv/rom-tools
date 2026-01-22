@@ -32,7 +32,6 @@ Maturity legend:
 
 - 🧹 [./lib/format/chd](./lib/format/chd): Implementation of the CHD (Compressed Hunks of Data) disc image format.
 - 🧹 [./lib/format/dreamcast](./lib/format/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
-- 🤖 [./lib/format/folder](./lib/format/folder): Directory-based ROM container.
 - 🧹 [./lib/format/gamecube](./lib/format/gamecube): GameCube and Wii disc header parsing, including RVZ support.
 - 🧹 [./lib/format/gb](./lib/format/gb): Game Boy and Game Boy Color ROM header parsing.
 - 🧹 [./lib/format/gba](./lib/format/gba): Game Boy Advance ROM header parsing.
@@ -47,7 +46,6 @@ Maturity legend:
 - 🧹 [./lib/format/sms](./lib/format/sms): Sega Master System and Game Gear ROM header parsing.
 - 🧹 [./lib/format/snes](./lib/format/snes): Super Nintendo ROM header parsing with LoROM/HiROM detection.
 - 🧹 [./lib/format/xbox](./lib/format/xbox): Original Xbox XBE executable and XISO disc image parsing.
-- 🤖 [./lib/format/zip](./lib/format/zip): ZIP archive ROM container.
 
 ## Test Data
 
