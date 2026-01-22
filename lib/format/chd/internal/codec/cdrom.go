@@ -1,4 +1,4 @@
-package chd
+package codec
 
 import (
 	"fmt"
@@ -10,6 +10,21 @@ const (
 	cdMaxSubcodeData = 96   // Subcode data per frame
 	cdFrameSize      = 2448 // cdMaxSectorData + cdMaxSubcodeData
 )
+
+// CDZLIB decompresses CD-ROM data using zlib for the base codec.
+func CDZLIB(data []byte, hunkBytes uint32) ([]byte, error) {
+	return decompressCDCodec(data, hunkBytes, Zlib, "zlib")
+}
+
+// CDLZMA decompresses CD-ROM data using LZMA for the base codec.
+func CDLZMA(data []byte, hunkBytes uint32) ([]byte, error) {
+	return decompressCDCodec(data, hunkBytes, LZMA, "lzma")
+}
+
+// CDZstd decompresses CD-ROM data using Zstd for the base codec.
+func CDZstd(data []byte, hunkBytes uint32) ([]byte, error) {
+	return decompressCDCodec(data, hunkBytes, Zstd, "zstd")
+}
 
 // decompressCDCodec is the common implementation for CD codecs.
 // Format: [ECC bitmap] [compressed base length] [base data (sector)] [subcode data (zlib)]
@@ -59,7 +74,7 @@ func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte
 	expectedSubcodeSize := frames * cdMaxSubcodeData
 	var subcodeData []byte
 	if len(subcodeCompressed) > 0 {
-		subcodeData, err = decompressZlib(subcodeCompressed, expectedSubcodeSize)
+		subcodeData, err = Zlib(subcodeCompressed, expectedSubcodeSize)
 		if err != nil {
 			return nil, fmt.Errorf("CD codec subcode decompress: %w", err)
 		}

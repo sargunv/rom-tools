@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/sargunv/rom-tools/lib/format/chd/internal/codec"
 )
 
 // V5 header layout (124 bytes):
@@ -318,4 +320,45 @@ func parseHeader(r io.ReaderAt, size int64) (*Header, error) {
 		SHA1:         sha1,
 		ParentSHA1:   parentSHA1,
 	}, nil
+}
+
+// decompressHunk decompresses a single hunk using the appropriate codec.
+func decompressHunk(compressedData []byte, codecID Codec, hunkBytes uint32) ([]byte, error) {
+	size := int(hunkBytes)
+
+	switch codecID {
+	case CodecNone:
+		// Uncompressed - just return a copy
+		result := make([]byte, size)
+		copy(result, compressedData)
+		return result, nil
+
+	case CodecZlib:
+		return codec.Zlib(compressedData, size)
+
+	case CodecLZMA:
+		return codec.LZMA(compressedData, size)
+
+	case CodecHuff:
+		return codec.Huffman(compressedData, size)
+
+	case CodecZstd:
+		return codec.Zstd(compressedData, size)
+
+	case CodecCDZlib:
+		return codec.CDZLIB(compressedData, hunkBytes)
+
+	case CodecCDLZMA:
+		return codec.CDLZMA(compressedData, hunkBytes)
+
+	case CodecCDZstd:
+		return codec.CDZstd(compressedData, hunkBytes)
+
+	case CodecFLAC, CodecCDFLAC:
+		// FLAC is for audio tracks - we don't need to decompress audio for identification
+		return nil, fmt.Errorf("FLAC codec not supported (audio only)")
+
+	default:
+		return nil, fmt.Errorf("unknown codec: 0x%08x", codecID)
+	}
 }

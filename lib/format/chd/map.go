@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/sargunv/rom-tools/lib/format/chd/internal/codec"
 )
 
 // V5 map compression types (from libchdr)
@@ -88,12 +90,12 @@ func decodeMap(r io.ReaderAt, header *Header) (*chdMap, error) {
 }
 
 func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentBits uint8, firstOffset uint64) ([]mapEntry, error) {
-	br := newBitReader(data)
+	br := codec.NewBitReader(data)
 	numHunks := header.TotalHunks
 
 	// Create Huffman decoder for compression types (16 symbols, max 8 bits)
-	huffman := newHuffmanDecoder(16, 8)
-	if err := huffman.importTreeRLE(br); err != nil {
+	huffman := codec.NewHuffmanDecoder(16, 8)
+	if err := huffman.ImportTreeRLE(br); err != nil {
 		return nil, fmt.Errorf("failed to import huffman tree: %w", err)
 	}
 
@@ -109,7 +111,7 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 			continue
 		}
 
-		val, err := huffman.decode(br)
+		val, err := huffman.Decode(br)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode compression type for hunk %d: %w", hunkNum, err)
 		}
@@ -117,7 +119,7 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 		switch val {
 		case compressionRLESmall:
 			// RLE small: repcount = 2 + huffman_decode_one()
-			count, err := huffman.decode(br)
+			count, err := huffman.Decode(br)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read RLE small count: %w", err)
 			}
@@ -126,11 +128,11 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 
 		case compressionRLELarge:
 			// RLE large: repcount = 2 + 16 + (huffman_decode_one() << 4) + huffman_decode_one()
-			high, err := huffman.decode(br)
+			high, err := huffman.Decode(br)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read RLE large high: %w", err)
 			}
-			low, err := huffman.decode(br)
+			low, err := huffman.Decode(br)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read RLE large low: %w", err)
 			}
@@ -156,11 +158,11 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 		switch compType {
 		case compressionType0, compressionType1, compressionType2, compressionType3:
 			// Compressed hunk: read length and CRC
-			length, err := br.readBits(uint32(lengthBits))
+			length, err := br.ReadBits(uint32(lengthBits))
 			if err != nil {
 				return nil, fmt.Errorf("failed to read length for hunk %d: %w", hunkNum, err)
 			}
-			crc, err := br.readBits(16)
+			crc, err := br.ReadBits(16)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read CRC for hunk %d: %w", hunkNum, err)
 			}
@@ -172,7 +174,7 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 
 		case compressionNone:
 			// Uncompressed hunk: length is hunkbytes
-			crc, err := br.readBits(16)
+			crc, err := br.ReadBits(16)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read CRC for hunk %d: %w", hunkNum, err)
 			}
@@ -184,7 +186,7 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 
 		case compressionSelf:
 			// Self reference: read hunk number
-			selfOffset, err := br.readBits(uint32(selfBits))
+			selfOffset, err := br.ReadBits(uint32(selfBits))
 			if err != nil {
 				return nil, fmt.Errorf("failed to read self offset for hunk %d: %w", hunkNum, err)
 			}
@@ -205,7 +207,7 @@ func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentB
 
 		case compressionParent:
 			// Parent reference: read unit number
-			parentOffset, err := br.readBits(uint32(parentBits))
+			parentOffset, err := br.ReadBits(uint32(parentBits))
 			if err != nil {
 				return nil, fmt.Errorf("failed to read parent offset for hunk %d: %w", hunkNum, err)
 			}
