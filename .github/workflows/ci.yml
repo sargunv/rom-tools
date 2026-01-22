@@ -16,6 +16,15 @@ jobs:
         with:
           experimental: true
 
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - run: mise run generate
       - run: mise run build
       - run: mise run test
