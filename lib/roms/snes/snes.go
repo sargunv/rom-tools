@@ -8,6 +8,7 @@ import (
 // SNES ROM format parsing.
 //
 // SNES ROM header specification:
+// https://sneslab.net/wiki/SNES_ROM_Header
 // https://snes.nesdev.org/wiki/ROM_header
 //
 // The internal header is located at different offsets depending on mapping mode:
@@ -15,33 +16,51 @@ import (
 // - HiROM: 0xFFC0
 // - ExHiROM: 0x40FFC0
 //
-// Internal header layout (32 bytes):
+// Extended header layout (16 bytes at FFB0-FFBF, relative -0x10 from standard header):
 //
 //	Offset  Size  Description
-//	0x00    21    Game title (ASCII, space-padded)
-//	0x15    1     Map mode
-//	0x16    1     ROM type (cartridge type)
-//	0x17    1     ROM size (log2 of kilobytes)
-//	0x18    1     SRAM size (log2 of kilobytes)
-//	0x19    1     Destination code (region)
-//	0x1A    1     Old licensee code (0x33 = use extended header)
-//	0x1B    1     Version number
-//	0x1C    2     Checksum complement
-//	0x1E    2     Checksum
+//	FFB0    2     Maker Code (ASCII, when old maker code is $33)
+//	FFB2    4     Game Code (ASCII)
+//	FFB6    6     Reserved
+//	FFBC    1     Reserved
+//	FFBD    1     Expansion RAM Size (log2 of kilobytes)
+//	FFBE    1     Special Version
+//	FFBF    1     Cartridge Sub-Type
+//
+// Standard header layout (32 bytes at FFC0-FFDF):
+//
+//	Offset  Size  Description
+//	FFC0    21    Game title (ASCII, space-padded)
+//	FFD5    1     Map mode
+//	FFD6    1     Cartridge type (chipset info)
+//	FFD7    1     ROM size (log2 of kilobytes)
+//	FFD8    1     RAM size (log2 of kilobytes)
+//	FFD9    1     Destination code (region)
+//	FFDA    1     Old maker code (0x33 = use extended header maker code)
+//	FFDB    1     Mask ROM version
+//	FFDC    2     Checksum complement
+//	FFDE    2     Checksum
 
 const (
 	snesHeaderSize      = 32
 	snesTitleOffset     = 0x00
 	snesTitleLen        = 21
 	snesMapModeOffset   = 0x15
-	snesROMTypeOffset   = 0x16
+	snesCartTypeOffset  = 0x16
 	snesROMSizeOffset   = 0x17
-	snesSRAMSizeOffset  = 0x18
+	snesRAMSizeOffset   = 0x18
 	snesDestCodeOffset  = 0x19
-	snesLicenseeOffset  = 0x1A
+	snesMakerOldOffset  = 0x1A
 	snesVersionOffset   = 0x1B
 	snesChecksumCOffset = 0x1C
 	snesChecksumOffset  = 0x1E
+
+	// Extended header offsets (relative to standard header start, i.e., -0x10)
+	snesMakerCodeOffset      = -0x10 // FFB0, 2 bytes
+	snesGameCodeOffset       = -0x0E // FFB2, 4 bytes
+	snesExpansionRAMOffset   = -0x03 // FFBD, 1 byte
+	snesSpecialVersionOffset = -0x02 // FFBE, 1 byte
+	snesCartSubTypeOffset    = -0x01 // FFBF, 1 byte
 
 	// Header offsets for different mapping modes (without copier header)
 	snesLoROMOffset   = 0x7FC0
@@ -55,29 +74,90 @@ const (
 // SNESMapMode indicates the memory mapping mode.
 type SNESMapMode byte
 
+// SNESMapMode values per sneslab wiki.
 const (
-	SNESMapModeLoROM     SNESMapMode = 0x20
-	SNESMapModeHiROM     SNESMapMode = 0x21
-	SNESMapModeLoROMSA1  SNESMapMode = 0x23 // SA-1
-	SNESMapModeExLoROM   SNESMapMode = 0x30 // ExLoROM
-	SNESMapModeExHiROM   SNESMapMode = 0x31 // ExHiROM
-	SNESMapModeHiROMSPC  SNESMapMode = 0x35 // SPC7110
-	SNESMapModeHiROMSPC2 SNESMapMode = 0x3A // SPC7110 variant (Tengai Makyou Zero)
+	SNESMapModeLoROM          SNESMapMode = 0x20 // 2.68MHz LoROM
+	SNESMapModeHiROM          SNESMapMode = 0x21 // 2.68MHz HiROM
+	SNESMapModeSA1            SNESMapMode = 0x23 // SA-1
+	SNESMapModeExHiROM        SNESMapMode = 0x25 // 2.68MHz ExHiROM
+	SNESMapModeFastROMLoROM   SNESMapMode = 0x30 // 3.58MHz LoROM
+	SNESMapModeFastROMHiROM   SNESMapMode = 0x31 // 3.58MHz HiROM
+	SNESMapModeFastROMExHiROM SNESMapMode = 0x35 // 3.58MHz ExHiROM
+	SNESMapModeSPC7110        SNESMapMode = 0x3A // SPC7110 variant (Tengai Makyou Zero)
+)
+
+// SNESDestination indicates the destination/region code.
+type SNESDestination byte
+
+// SNESDestination values per SNES Development Manual.
+const (
+	SNESDestinationJapan       SNESDestination = 0x00
+	SNESDestinationUSA         SNESDestination = 0x01
+	SNESDestinationEurope      SNESDestination = 0x02
+	SNESDestinationScandinavia SNESDestination = 0x03
+	SNESDestinationFrench      SNESDestination = 0x06
+	SNESDestinationDutch       SNESDestination = 0x07
+	SNESDestinationSpanish     SNESDestination = 0x08
+	SNESDestinationGerman      SNESDestination = 0x09
+	SNESDestinationItalian     SNESDestination = 0x0A
+	SNESDestinationChinese     SNESDestination = 0x0B
+	SNESDestinationKorean      SNESDestination = 0x0D
+	SNESDestinationCommon      SNESDestination = 0x0E
+	SNESDestinationCanada      SNESDestination = 0x0F
+	SNESDestinationBrazil      SNESDestination = 0x10
+	SNESDestinationAustralia   SNESDestination = 0x11
+)
+
+// SNESCartridgeType indicates the cartridge chipset type.
+type SNESCartridgeType byte
+
+// SNESCartridgeType common values.
+const (
+	SNESCartridgeROMOnly       SNESCartridgeType = 0x00
+	SNESCartridgeROMRAM        SNESCartridgeType = 0x01
+	SNESCartridgeROMRAMBattery SNESCartridgeType = 0x02
+	SNESCartridgeSA1           SNESCartridgeType = 0x33
+	SNESCartridgeSA1RAM        SNESCartridgeType = 0x34
+	SNESCartridgeSA1RAMBattery SNESCartridgeType = 0x35
 )
 
 // SNESInfo contains metadata extracted from a SNES ROM file.
 type SNESInfo struct {
-	Title              string
-	MapMode            SNESMapMode
-	ROMType            byte // Cartridge type (coprocessor info)
-	ROMSize            int  // ROM size in bytes
-	SRAMSize           int  // SRAM size in bytes
-	DestinationCode    byte // Region code
-	LicenseeCode       byte
-	Version            int
-	Checksum           uint16
-	ChecksumComplement uint16
-	HasCopierHeader    bool // True if 512-byte copier header was detected
+	// Extended header (FFB0-FFBF) - may not be present in older ROMs
+	// MakerCode is the 2-char maker code (FFB0), present when MakerCodeOld is 0x33.
+	MakerCode string
+	// GameCode is the 4-char game code (FFB2).
+	GameCode string
+	// ExpansionRAMSize is the expansion RAM size in bytes (FFBD).
+	ExpansionRAMSize int
+	// SpecialVersion is the special version byte (FFBE).
+	SpecialVersion byte
+	// CartridgeSubType is the cartridge sub-type (FFBF).
+	CartridgeSubType byte
+
+	// Standard header (FFC0-FFDF)
+	// Title is the game title (21 chars max, space-padded).
+	Title string
+	// MapMode is the memory mapping mode (FFD5).
+	MapMode SNESMapMode
+	// CartridgeType is the chipset info (FFD6).
+	CartridgeType SNESCartridgeType
+	// ROMSize is the ROM size in bytes (FFD7).
+	ROMSize int
+	// RAMSize is the RAM/SRAM size in bytes (FFD8).
+	RAMSize int
+	// Destination is the region code (FFD9).
+	Destination SNESDestination
+	// MakerCodeOld is the old maker code (FFDA) - 0x33 means use MakerCode.
+	MakerCodeOld byte
+	// MaskROMVersion is the ROM version number (FFDB).
+	MaskROMVersion int
+	// ComplementCheck is the checksum complement (FFDC).
+	ComplementCheck uint16
+	// Checksum is the ROM checksum (FFDE).
+	Checksum uint16
+	// HasCopierHeader is true if 512-byte copier header detected.
+	HasCopierHeader bool
 }
 
 // ParseSNES extracts information from a SNES ROM file.
@@ -124,8 +204,8 @@ func parseSNESHeader(r io.ReaderAt, offset int64, fileSize int64, hasCopierHeade
 	// Map mode
 	mapMode := SNESMapMode(header[snesMapModeOffset])
 
-	// ROM type
-	romType := header[snesROMTypeOffset]
+	// Cartridge type
+	cartType := SNESCartridgeType(header[snesCartTypeOffset])
 
 	// ROM size: 1 << (header value) kilobytes
 	romSizeExp := header[snesROMSizeOffset]
@@ -134,38 +214,70 @@ func parseSNESHeader(r io.ReaderAt, offset int64, fileSize int64, hasCopierHeade
 		romSize = (1 << romSizeExp) * 1024
 	}
 
-	// SRAM size: 1 << (header value) kilobytes (0 = no SRAM)
-	sramSizeExp := header[snesSRAMSizeOffset]
-	sramSize := 0
-	if sramSizeExp > 0 && sramSizeExp < 16 {
-		sramSize = (1 << sramSizeExp) * 1024
+	// RAM size: 1 << (header value) kilobytes (0 = no RAM)
+	ramSizeExp := header[snesRAMSizeOffset]
+	ramSize := 0
+	if ramSizeExp > 0 && ramSizeExp < 16 {
+		ramSize = (1 << ramSizeExp) * 1024
 	}
 
 	// Destination code
-	destCode := header[snesDestCodeOffset]
+	destination := SNESDestination(header[snesDestCodeOffset])
 
-	// Licensee code
-	licenseeCode := header[snesLicenseeOffset]
+	// Old maker code
+	makerCodeOld := header[snesMakerOldOffset]
 
-	// Version
-	version := int(header[snesVersionOffset])
+	// Mask ROM version
+	maskROMVersion := int(header[snesVersionOffset])
 
 	// Checksum complement and checksum (little-endian)
-	checksumC := uint16(header[snesChecksumCOffset]) | uint16(header[snesChecksumCOffset+1])<<8
+	complementCheck := uint16(header[snesChecksumCOffset]) | uint16(header[snesChecksumCOffset+1])<<8
 	checksum := uint16(header[snesChecksumOffset]) | uint16(header[snesChecksumOffset+1])<<8
 
+	// Extended header fields (only read if offset allows and maker code is 0x33)
+	var makerCode, gameCode string
+	var expansionRAMSize int
+	var specialVersion, cartSubType byte
+
+	extOffset := offset + int64(snesMakerCodeOffset)
+	if makerCodeOld == 0x33 && extOffset >= 0 {
+		extHeader := make([]byte, 16)
+		if _, err := r.ReadAt(extHeader, extOffset); err == nil {
+			// Maker code (2 bytes at offset 0 = FFB0)
+			makerCode = extractSNESTitle(extHeader[0:2])
+			// Game code (4 bytes at offset 2 = FFB2)
+			gameCode = extractSNESTitle(extHeader[2:6])
+			// Expansion RAM size (byte at offset 13 = FFBD)
+			expRAMExp := extHeader[13]
+			if expRAMExp > 0 && expRAMExp < 16 {
+				expansionRAMSize = (1 << expRAMExp) * 1024
+			}
+			// Special version (byte at offset 14 = FFBE)
+			specialVersion = extHeader[14]
+			// Cartridge sub-type (byte at offset 15 = FFBF)
+			cartSubType = extHeader[15]
+		}
+	}
+
 	return &SNESInfo{
-		Title:              title,
-		MapMode:            mapMode,
-		ROMType:            romType,
-		ROMSize:            romSize,
-		SRAMSize:           sramSize,
-		DestinationCode:    destCode,
-		LicenseeCode:       licenseeCode,
-		Version:            version,
-		Checksum:           checksum,
-		ChecksumComplement: checksumC,
-		HasCopierHeader:    hasCopierHeader,
+		// Extended header
+		MakerCode:        makerCode,
+		GameCode:         gameCode,
+		ExpansionRAMSize: expansionRAMSize,
+		SpecialVersion:   specialVersion,
+		CartridgeSubType: cartSubType,
+		// Standard header
+		Title:           title,
+		MapMode:         mapMode,
+		CartridgeType:   cartType,
+		ROMSize:         romSize,
+		RAMSize:         ramSize,
+		Destination:     destination,
+		MakerCodeOld:    makerCodeOld,
+		MaskROMVersion:  maskROMVersion,
+		ComplementCheck: complementCheck,
+		Checksum:        checksum,
+		HasCopierHeader: hasCopierHeader,
 	}, nil
 }
 
@@ -173,7 +285,7 @@ func parseSNESHeader(r io.ReaderAt, offset int64, fileSize int64, hasCopierHeade
 func isValidSNESHeader(info *SNESInfo, fileSize int64) bool {
 	// 1. Checksum validation: checksum + complement should equal 0xFFFF
 	//    This is the strongest signal (1 in 65,536 chance of random data passing)
-	if info.Checksum+info.ChecksumComplement != 0xFFFF {
+	if info.Checksum+info.ComplementCheck != 0xFFFF {
 		return false
 	}
 

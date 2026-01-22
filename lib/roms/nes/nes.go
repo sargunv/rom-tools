@@ -1,6 +1,7 @@
 package nes
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 )
@@ -93,10 +94,8 @@ func ParseNES(r io.ReaderAt, size int64) (*NESInfo, error) {
 	}
 
 	// Verify magic bytes
-	for i := 0; i < nesMagicLen; i++ {
-		if header[nesMagicOffset+i] != nesMagic[i] {
-			return nil, fmt.Errorf("not a valid NES ROM: magic mismatch")
-		}
+	if !bytes.Equal(header[nesMagicOffset:nesMagicOffset+nesMagicLen], nesMagic) {
+		return nil, fmt.Errorf("not a valid NES ROM: magic mismatch")
 	}
 
 	flags6 := header[nesFlags6Offset]
