@@ -33,17 +33,17 @@ Maturity legend:
 
 - 🧹 [./lib/roms/dreamcast](./lib/roms/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
 - 🏗️ [./lib/roms/gamecube](./lib/roms/gamecube): GameCube and Wii disc header parsing, including RVZ support.
-- 🧹 [./lib/roms/gb](./lib/roms/gb): Game Boy and Game Boy Color ROM header parsing.
-- 🧹 [./lib/roms/gba](./lib/roms/gba): Game Boy Advance ROM header parsing.
+- 🏗️ [./lib/roms/gb](./lib/roms/gb): Game Boy and Game Boy Color ROM header parsing.
+- 🏗️ [./lib/roms/gba](./lib/roms/gba): Game Boy Advance ROM header parsing.
 - 🤖 [./lib/roms/iso9660](./lib/roms/iso9660): ISO 9660 filesystem image parsing for optical disk platforms.
-- 🧹 [./lib/roms/megadrive](./lib/roms/megadrive): Sega Mega Drive (Genesis) ROM header parsing, including SMD format.
+- 🏗️ [./lib/roms/megadrive](./lib/roms/megadrive): Sega Mega Drive (Genesis) ROM header parsing, including SMD format.
 - 🧹 [./lib/roms/n64](./lib/roms/n64): Nintendo 64 ROM parsing with support for Z64, V64, and N64 byte orders.
 - 🧹 [./lib/roms/nds](./lib/roms/nds): Nintendo DS ROM header parsing.
 - 🧹 [./lib/roms/nes](./lib/roms/nes): NES ROM parsing for iNES and NES 2.0 formats.
 - 🧹 [./lib/roms/playstation_cnf](./lib/roms/playstation_cnf): PlayStation 1/2 SYSTEM.CNF parsing for disc identification.
 - 🧹 [./lib/roms/playstation_sfo](./lib/roms/playstation_sfo): PlayStation SFO metadata format for PSP, PS3, PS Vita, and PS4.
 - 🧹 [./lib/roms/saturn](./lib/roms/saturn): Sega Saturn disc identification from system area headers.
-- 🧹 [./lib/roms/sms](./lib/roms/sms): Sega Master System and Game Gear ROM header parsing.
+- 🏗️ [./lib/roms/sms](./lib/roms/sms): Sega Master System and Game Gear ROM header parsing.
 - 🧹 [./lib/roms/snes](./lib/roms/snes): Super Nintendo ROM header parsing with LoROM/HiROM detection.
 - 🧹 [./lib/roms/xbox](./lib/roms/xbox): Original Xbox XBE executable and XISO disc image parsing.
 
