@@ -95,13 +95,9 @@ func dreamcastInfoToGameIdent(info *dreamcast.DreamcastInfo) *GameIdent {
 }
 
 func cnfInfoToGameIdent(info *playstation_cnf.CNFInfo) *GameIdent {
-	// Normalize disc ID: replace underscore with hyphen, remove periods
-	normalizedID := strings.ReplaceAll(info.DiscID, "_", "-")
-	normalizedID = strings.ReplaceAll(normalizedID, ".", "")
-
 	return &GameIdent{
 		Platform: info.Platform,
-		Serial:   normalizedID,
+		Serial:   info.DiscID(),
 		Extra:    info,
 	}
 }

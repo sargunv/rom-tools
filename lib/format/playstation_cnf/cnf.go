@@ -45,12 +45,17 @@ const (
 type CNFInfo struct {
 	// Platform is PS1 or PS2, determined by the boot line type.
 	Platform core.Platform `json:",omitempty"`
-	// DiscID is the game identifier from the boot path (e.g., "SCUS_943.00").
-	DiscID string `json:",omitempty"`
+	// BootPath is the raw boot path from BOOT/BOOT2 line (e.g., "cdrom0:\SLUS_123.45;1").
+	BootPath string `json:",omitempty"`
 	// Version is the disc version from VER line (PS2 only).
 	Version string `json:",omitempty"`
 	// VideoMode is NTSC or PAL (PS2 only).
 	VideoMode VideoMode `json:",omitempty"`
+}
+
+// DiscID extracts the game identifier from the boot path (e.g., "SLUS_123.45").
+func (c *CNFInfo) DiscID() string {
+	return extractDiscID(c.BootPath)
 }
 
 // ParseCNF parses PlayStation SYSTEM.CNF content from a reader.
@@ -83,12 +88,12 @@ func parseCNFBytes(data []byte) (*CNFInfo, error) {
 		case "BOOT2":
 			// PS2 disc
 			info.Platform = core.PlatformPS2
-			info.DiscID = extractDiscID(value)
+			info.BootPath = value
 		case "BOOT":
 			// PS1 disc (only use if BOOT2 not found)
 			if info.Platform != core.PlatformPS2 {
 				info.Platform = core.PlatformPS1
-				info.DiscID = extractDiscID(value)
+				info.BootPath = value
 			}
 		case "VER":
 			info.Version = value
@@ -97,35 +102,39 @@ func parseCNFBytes(data []byte) (*CNFInfo, error) {
 		}
 	}
 
-	if info.DiscID == "" {
-		return nil, fmt.Errorf("not a valid PlayStation SYSTEM.CNF: no disc ID found")
+	if info.BootPath == "" {
+		return nil, fmt.Errorf("not a valid PlayStation SYSTEM.CNF: no boot path found")
 	}
 
 	return info, nil
 }
 
 // extractDiscID extracts the disc ID from a BOOT/BOOT2 path.
-// Input: "cdrom0:\SLUS_123.45;1" or "cdrom:\SCUS_943.00;1"
-// Output: "SLUS_123.45" or "SCUS_943.00"
+// The disc ID is the portion after any of the characters `:`, `/`, or `\`
+// and before the string `;1`.
+//
+// Examples:
+//   - "cdrom0:\SLUS_123.45;1" → "SLUS_123.45"
+//   - "cdrom:\SCUS_943.00;1" → "SCUS_943.00"
+//   - "cdrom:SCUS_943.01" → "SCUS_943.01" (no backslash)
 func extractDiscID(bootPath string) string {
-	// Find last backslash
-	lastBackslash := strings.LastIndex(bootPath, "\\")
-	if lastBackslash == -1 {
-		// Try forward slash as fallback
-		lastBackslash = strings.LastIndex(bootPath, "/")
+	// Find last occurrence of any separator (`:`, `/`, or `\`)
+	lastSep := -1
+	for _, sep := range []string{":", "/", "\\"} {
+		if idx := strings.LastIndex(bootPath, sep); idx > lastSep {
+			lastSep = idx
+		}
 	}
 
 	var filename string
-	if lastBackslash != -1 {
-		filename = bootPath[lastBackslash+1:]
+	if lastSep != -1 {
+		filename = bootPath[lastSep+1:]
 	} else {
 		filename = bootPath
 	}
 
-	// Remove version suffix (;1)
-	if semicolon := strings.Index(filename, ";"); semicolon != -1 {
-		filename = filename[:semicolon]
-	}
+	// Remove ";1" suffix if present
+	filename = strings.TrimSuffix(filename, ";1")
 
 	return filename
 }
