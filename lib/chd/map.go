@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sargunv/rom-tools/lib/format/chd/internal/codec"
+	"github.com/sargunv/rom-tools/lib/chd/internal/codec"
 )
 
 // V5 map compression types (from libchdr)
