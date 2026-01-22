@@ -292,7 +292,7 @@ func identifyXISO(r io.ReaderAt, size int64) (*GameIdent, error) {
 }
 
 func identifyCHD(r io.ReaderAt, size int64) (*GameIdent, error) {
-	isoReader, isoSize, err := chd.NewISO9660Reader(r, size)
+	isoReader, isoSize, err := chd.OpenUserData(r, size)
 	if err != nil {
 		return nil, err
 	}

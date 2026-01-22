@@ -12,16 +12,10 @@ import (
 
 // CD-ROM frame constants (from libchdr/cdrom.h)
 const (
-	CDMaxSectorData  = 2352 // Raw sector data size
-	CDMaxSubcodeData = 96   // Subcode data per frame
-	CDFrameSize      = 2448 // CDMaxSectorData + CDMaxSubcodeData
-	CDSyncSize       = 12   // Sync pattern size
-	CDDataOffset     = 16   // User data offset in Mode 1
-	CDUserDataSize   = 2048 // User data size in Mode 1/2
+	cdMaxSectorData  = 2352 // Raw sector data size
+	cdMaxSubcodeData = 96   // Subcode data per frame
+	cdFrameSize      = 2448 // cdMaxSectorData + cdMaxSubcodeData
 )
-
-// CD-ROM sync pattern
-var cdSyncPattern = []byte{0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00}
 
 // decompressCDZlib decompresses CD-ROM data with zlib base compression.
 func decompressCDZlib(data []byte, hunkBytes uint32) ([]byte, error) {
@@ -42,7 +36,7 @@ func decompressCDZstd(data []byte, hunkBytes uint32) ([]byte, error) {
 // Format: [ECC bitmap] [compressed base length] [base data (sector)] [subcode data (zlib)]
 func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte, int) ([]byte, error), codecName string) ([]byte, error) {
 	// Calculate frame count
-	frames := int(hunkBytes / CDFrameSize)
+	frames := int(hunkBytes / cdFrameSize)
 	if frames == 0 {
 		return nil, fmt.Errorf("CD codec: invalid hunk size %d", hunkBytes)
 	}
@@ -73,17 +67,17 @@ func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte
 		return nil, fmt.Errorf("CD codec: data too short for base (need %d, have %d)", headerBytes+complenBase, len(data))
 	}
 
-	// Decompress base (sector) data - outputs CDMaxSectorData (2352) bytes per frame
+	// Decompress base (sector) data - outputs cdMaxSectorData (2352) bytes per frame
 	baseCompressed := data[headerBytes : headerBytes+complenBase]
-	expectedBaseSize := frames * CDMaxSectorData
+	expectedBaseSize := frames * cdMaxSectorData
 	baseData, err := baseDecompress(baseCompressed, expectedBaseSize)
 	if err != nil {
 		return nil, fmt.Errorf("CD codec base decompress (%s): %w", codecName, err)
 	}
 
-	// Decompress subcode data (always zlib) - outputs CDMaxSubcodeData (96) bytes per frame
+	// Decompress subcode data (always zlib) - outputs cdMaxSubcodeData (96) bytes per frame
 	subcodeCompressed := data[headerBytes+complenBase:]
-	expectedSubcodeSize := frames * CDMaxSubcodeData
+	expectedSubcodeSize := frames * cdMaxSubcodeData
 	var subcodeData []byte
 	if len(subcodeCompressed) > 0 {
 		subcodeData, err = decompressZlibRaw(subcodeCompressed, expectedSubcodeSize)
@@ -99,17 +93,17 @@ func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte
 	result := make([]byte, hunkBytes)
 	for i := range frames {
 		// Copy sector data (2352 bytes)
-		srcOffset := i * CDMaxSectorData
-		dstOffset := i * CDFrameSize
-		if srcOffset+CDMaxSectorData <= len(baseData) {
-			copy(result[dstOffset:], baseData[srcOffset:srcOffset+CDMaxSectorData])
+		srcOffset := i * cdMaxSectorData
+		dstOffset := i * cdFrameSize
+		if srcOffset+cdMaxSectorData <= len(baseData) {
+			copy(result[dstOffset:], baseData[srcOffset:srcOffset+cdMaxSectorData])
 		}
 
 		// Copy subcode data (96 bytes)
-		srcSubOffset := i * CDMaxSubcodeData
-		dstSubOffset := dstOffset + CDMaxSectorData
-		if srcSubOffset+CDMaxSubcodeData <= len(subcodeData) {
-			copy(result[dstSubOffset:], subcodeData[srcSubOffset:srcSubOffset+CDMaxSubcodeData])
+		srcSubOffset := i * cdMaxSubcodeData
+		dstSubOffset := dstOffset + cdMaxSectorData
+		if srcSubOffset+cdMaxSubcodeData <= len(subcodeData) {
+			copy(result[dstSubOffset:], subcodeData[srcSubOffset:srcSubOffset+cdMaxSubcodeData])
 		}
 	}
 
@@ -172,35 +166,4 @@ func decompressZstdRaw(data []byte, outputSize int) ([]byte, error) {
 		return nil, err
 	}
 	return result, nil
-}
-
-// ExtractUserData extracts the 2048-byte user data portion from a CD-ROM sector.
-// For Mode 1 sectors, this is bytes 16-2063 of the 2352-byte frame.
-func ExtractUserData(sector []byte) []byte {
-	if len(sector) < CDMaxSectorData {
-		return sector // Return as-is for non-CD data
-	}
-
-	// Check if this looks like a CD-ROM sector with sync pattern
-	if len(sector) >= CDSyncSize {
-		isSync := true
-		for i, b := range cdSyncPattern {
-			if sector[i] != b {
-				isSync = false
-				break
-			}
-		}
-		if isSync {
-			// Extract user data from Mode 1 sector (bytes 16-2063)
-			if len(sector) >= CDDataOffset+CDUserDataSize {
-				return sector[CDDataOffset : CDDataOffset+CDUserDataSize]
-			}
-		}
-	}
-
-	// For non-Mode1 or unrecognized format, return first 2048 bytes
-	if len(sector) >= CDUserDataSize {
-		return sector[:CDUserDataSize]
-	}
-	return sector
 }

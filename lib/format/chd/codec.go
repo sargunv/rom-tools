@@ -2,7 +2,6 @@ package chd
 
 import (
 	"bytes"
-	"compress/flate"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -12,7 +11,7 @@ import (
 )
 
 // decompressHunk decompresses a single hunk using the appropriate codec.
-func decompressHunk(compressedData []byte, codecID uint32, hunkBytes uint32) ([]byte, error) {
+func decompressHunk(compressedData []byte, codecID Codec, hunkBytes uint32) ([]byte, error) {
 	switch codecID {
 	case CodecNone:
 		// Uncompressed - just return a copy
@@ -52,15 +51,7 @@ func decompressHunk(compressedData []byte, codecID uint32, hunkBytes uint32) ([]
 
 // decompressZlib decompresses raw zlib/deflate data.
 func decompressZlib(data []byte, outputSize uint32) ([]byte, error) {
-	r := flate.NewReader(bytes.NewReader(data))
-	defer r.Close()
-
-	result := make([]byte, outputSize)
-	n, err := io.ReadFull(r, result)
-	if err != nil && err != io.ErrUnexpectedEOF {
-		return nil, fmt.Errorf("zlib decompress: %w", err)
-	}
-	return result[:n], nil
+	return decompressZlibRaw(data, int(outputSize))
 }
 
 // decompressLZMA decompresses raw LZMA data (no header) as used by CHD.
@@ -155,9 +146,5 @@ func init() {
 
 // decompressZstd decompresses Zstandard data.
 func decompressZstd(data []byte, outputSize uint32) ([]byte, error) {
-	result, err := zstdDecoder.DecodeAll(data, make([]byte, 0, outputSize))
-	if err != nil {
-		return nil, fmt.Errorf("zstd decompress: %w", err)
-	}
-	return result, nil
+	return decompressZstdRaw(data, int(outputSize))
 }

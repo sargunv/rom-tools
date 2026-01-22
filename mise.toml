@@ -8,6 +8,7 @@ hk = "latest"
 pkl = "latest"
 prettier = "latest"
 "go:golang.org/x/pkgsite/cmd/pkgsite" = "latest"
+uv = "latest"
 
 [env]
 _.file = '.env'

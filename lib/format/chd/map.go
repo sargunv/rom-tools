@@ -24,17 +24,17 @@ const (
 	compressionParent1    = 13 // Parent reference, offset +1
 )
 
-// MapEntry represents a single hunk's location and compression info.
-type MapEntry struct {
-	Compression uint8  // Compression type (0-6)
-	Length      uint32 // Compressed length in bytes
-	Offset      uint64 // Offset in file (or hunk number for self-reference)
-	CRC16       uint16 // CRC of uncompressed data
+// mapEntry represents a single hunk's location and compression info.
+type mapEntry struct {
+	compression uint8  // Compression type (0-6)
+	length      uint32 // Compressed length in bytes
+	offset      uint64 // Offset in file (or hunk number for self-reference)
+	crc16       uint16 // CRC of uncompressed data
 }
 
-// Map contains the decoded hunk map for a CHD file.
-type Map struct {
-	Entries []MapEntry
+// chdMap contains the decoded hunk map for a CHD file.
+type chdMap struct {
+	entries []mapEntry
 }
 
 // V5 map header structure (16 bytes):
@@ -48,10 +48,10 @@ type Map struct {
 //	[15]    uint8  reserved
 const mapHeaderSize = 16
 
-// DecodeMap reads and decompresses the V5 hunk map.
-func DecodeMap(r io.ReaderAt, header *CHDInfo) (*Map, error) {
+// decodeMap reads and decompresses the V5 hunk map.
+func decodeMap(r io.ReaderAt, header *CHDInfo) (*chdMap, error) {
 	if header.TotalHunks == 0 {
-		return &Map{Entries: []MapEntry{}}, nil
+		return &chdMap{entries: []mapEntry{}}, nil
 	}
 
 	// Read map header
@@ -84,10 +84,10 @@ func DecodeMap(r io.ReaderAt, header *CHDInfo) (*Map, error) {
 		return nil, fmt.Errorf("map CRC mismatch: got %04x, want %04x", crc, mapCRC)
 	}
 
-	return &Map{Entries: entries}, nil
+	return &chdMap{entries: entries}, nil
 }
 
-func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parentBits uint8, firstOffset uint64) ([]MapEntry, error) {
+func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parentBits uint8, firstOffset uint64) ([]mapEntry, error) {
 	br := newBitReader(data)
 	numHunks := header.TotalHunks
 
@@ -144,7 +144,7 @@ func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parent
 	}
 
 	// Phase 2: Extract offset/length/CRC data for each hunk
-	entries := make([]MapEntry, numHunks)
+	entries := make([]mapEntry, numHunks)
 	curOffset := firstOffset
 	var lastSelf uint64
 	var lastParent uint64
@@ -164,10 +164,10 @@ func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parent
 			if err != nil {
 				return nil, fmt.Errorf("failed to read CRC for hunk %d: %w", hunkNum, err)
 			}
-			entry.Compression = compType
-			entry.Length = length
-			entry.Offset = curOffset
-			entry.CRC16 = uint16(crc)
+			entry.compression = compType
+			entry.length = length
+			entry.offset = curOffset
+			entry.crc16 = uint16(crc)
 			curOffset += uint64(length)
 
 		case compressionNone:
@@ -176,10 +176,10 @@ func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parent
 			if err != nil {
 				return nil, fmt.Errorf("failed to read CRC for hunk %d: %w", hunkNum, err)
 			}
-			entry.Compression = compressionNone
-			entry.Length = header.HunkBytes
-			entry.Offset = curOffset
-			entry.CRC16 = uint16(crc)
+			entry.compression = compressionNone
+			entry.length = header.HunkBytes
+			entry.offset = curOffset
+			entry.crc16 = uint16(crc)
 			curOffset += uint64(header.HunkBytes)
 
 		case compressionSelf:
@@ -188,20 +188,20 @@ func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parent
 			if err != nil {
 				return nil, fmt.Errorf("failed to read self offset for hunk %d: %w", hunkNum, err)
 			}
-			entry.Compression = compressionSelf
-			entry.Offset = uint64(selfOffset)
+			entry.compression = compressionSelf
+			entry.offset = uint64(selfOffset)
 			lastSelf = uint64(selfOffset)
 
 		case compressionSelf0:
 			// Self reference with offset +0
-			entry.Compression = compressionSelf
-			entry.Offset = lastSelf
+			entry.compression = compressionSelf
+			entry.offset = lastSelf
 
 		case compressionSelf1:
 			// Self reference with offset +1
 			lastSelf++
-			entry.Compression = compressionSelf
-			entry.Offset = lastSelf
+			entry.compression = compressionSelf
+			entry.offset = lastSelf
 
 		case compressionParent:
 			// Parent reference: read unit number
@@ -209,26 +209,26 @@ func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parent
 			if err != nil {
 				return nil, fmt.Errorf("failed to read parent offset for hunk %d: %w", hunkNum, err)
 			}
-			entry.Compression = compressionParent
-			entry.Offset = uint64(parentOffset)
+			entry.compression = compressionParent
+			entry.offset = uint64(parentOffset)
 			lastParent = uint64(parentOffset)
 
 		case compressionParent0:
 			// Parent reference with offset +0
-			entry.Compression = compressionParent
-			entry.Offset = lastParent
+			entry.compression = compressionParent
+			entry.offset = lastParent
 
 		case compressionParent1:
 			// Parent reference: offset += hunkbytes/unitbytes
 			lastParent += uint64(header.HunkBytes / header.UnitBytes)
-			entry.Compression = compressionParent
-			entry.Offset = lastParent
+			entry.compression = compressionParent
+			entry.offset = lastParent
 
 		case compressionParentSelf:
 			// Parent reference using current hunk's logical offset
 			offset := (uint64(hunkNum) * uint64(header.HunkBytes)) / uint64(header.UnitBytes)
-			entry.Compression = compressionParent
-			entry.Offset = offset
+			entry.compression = compressionParent
+			entry.offset = offset
 			lastParent = offset
 
 		default:
@@ -247,26 +247,26 @@ func readUint48BE(b []byte) uint64 {
 
 // calculateMapCRC calculates CRC16 of the decompressed map entries.
 // Each entry is serialized to 12 bytes before CRC calculation.
-func calculateMapCRC(entries []MapEntry) uint16 {
+func calculateMapCRC(entries []mapEntry) uint16 {
 	// Serialize entries to bytes (12 bytes each)
 	data := make([]byte, len(entries)*12)
 	for i, e := range entries {
 		off := i * 12
-		data[off+0] = e.Compression
+		data[off+0] = e.compression
 		// Length as 24-bit big-endian
-		data[off+1] = byte(e.Length >> 16)
-		data[off+2] = byte(e.Length >> 8)
-		data[off+3] = byte(e.Length)
+		data[off+1] = byte(e.length >> 16)
+		data[off+2] = byte(e.length >> 8)
+		data[off+3] = byte(e.length)
 		// Offset as 48-bit big-endian
-		data[off+4] = byte(e.Offset >> 40)
-		data[off+5] = byte(e.Offset >> 32)
-		data[off+6] = byte(e.Offset >> 24)
-		data[off+7] = byte(e.Offset >> 16)
-		data[off+8] = byte(e.Offset >> 8)
-		data[off+9] = byte(e.Offset)
+		data[off+4] = byte(e.offset >> 40)
+		data[off+5] = byte(e.offset >> 32)
+		data[off+6] = byte(e.offset >> 24)
+		data[off+7] = byte(e.offset >> 16)
+		data[off+8] = byte(e.offset >> 8)
+		data[off+9] = byte(e.offset)
 		// CRC as 16-bit big-endian
-		data[off+10] = byte(e.CRC16 >> 8)
-		data[off+11] = byte(e.CRC16)
+		data[off+10] = byte(e.crc16 >> 8)
+		data[off+11] = byte(e.crc16)
 	}
 	return crc16(data)
 }

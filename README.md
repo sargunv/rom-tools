@@ -30,7 +30,7 @@ Maturity legend:
 
 ### ROM format implementations
 
-- 🤖 [./lib/format/chd](./lib/format/chd): Implementation of the CHD (Compressed Hunks of Data) disc image format.
+- 🧹 [./lib/format/chd](./lib/format/chd): Implementation of the CHD (Compressed Hunks of Data) disc image format.
 - 🧹 [./lib/format/dreamcast](./lib/format/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
 - 🤖 [./lib/format/folder](./lib/format/folder): Directory-based ROM container.
 - 🧹 [./lib/format/gamecube](./lib/format/gamecube): GameCube and Wii disc header parsing, including RVZ support.

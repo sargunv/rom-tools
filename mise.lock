@@ -31,3 +31,7 @@ backend = "aqua:apple/pkl"
 [[tools.prettier]]
 version = "3.6.2"
 backend = "npm:prettier"
+
+[[tools.uv]]
+version = "0.9.7"
+backend = "aqua:astral-sh/uv"
