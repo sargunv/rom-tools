@@ -49,7 +49,7 @@ type chdMap struct {
 const mapHeaderSize = 16
 
 // decodeMap reads and decompresses the V5 hunk map.
-func decodeMap(r io.ReaderAt, header *CHDInfo) (*chdMap, error) {
+func decodeMap(r io.ReaderAt, header *Header) (*chdMap, error) {
 	if header.TotalHunks == 0 {
 		return &chdMap{entries: []mapEntry{}}, nil
 	}
@@ -87,7 +87,7 @@ func decodeMap(r io.ReaderAt, header *CHDInfo) (*chdMap, error) {
 	return &chdMap{entries: entries}, nil
 }
 
-func decodeMapEntries(data []byte, header *CHDInfo, lengthBits, selfBits, parentBits uint8, firstOffset uint64) ([]mapEntry, error) {
+func decodeMapEntries(data []byte, header *Header, lengthBits, selfBits, parentBits uint8, firstOffset uint64) ([]mapEntry, error) {
 	br := newBitReader(data)
 	numHunks := header.TotalHunks
 

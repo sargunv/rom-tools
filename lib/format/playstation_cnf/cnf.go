@@ -44,13 +44,13 @@ const (
 // CNFInfo contains metadata extracted from a PlayStation SYSTEM.CNF file.
 type CNFInfo struct {
 	// Platform is PS1 or PS2, determined by the boot line type.
-	Platform core.Platform
+	Platform core.Platform `json:",omitempty"`
 	// DiscID is the game identifier from the boot path (e.g., "SCUS_943.00").
-	DiscID string
+	DiscID string `json:",omitempty"`
 	// Version is the disc version from VER line (PS2 only).
-	Version string
+	Version string `json:",omitempty"`
 	// VideoMode is NTSC or PAL (PS2 only).
-	VideoMode VideoMode
+	VideoMode VideoMode `json:",omitempty"`
 }
 
 // ParseCNF parses PlayStation SYSTEM.CNF content from a reader.

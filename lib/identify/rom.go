@@ -208,13 +208,14 @@ func identifySingleReader(r util.RandomAccessReader, name string, detector *dete
 
 	// For CHD, always extract hashes from header (fast, no decompression)
 	if detectedFormat == FormatCHD {
-		chdInfo, err := chd.ParseCHD(r, size)
+		chdReader, err := chd.NewReader(r, size)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse CHD header: %w", err)
 		}
+		header := chdReader.Header()
 		romFile.Hashes = []Hash{
-			newHash(HashSHA1, chdInfo.RawSHA1, HashSourceCHDRaw),
-			newHash(HashSHA1, chdInfo.SHA1, HashSourceCHDCompressed),
+			newHash(HashSHA1, header.RawSHA1, HashSourceCHDRaw),
+			newHash(HashSHA1, header.SHA1, HashSourceCHDCompressed),
 		}
 		return romFile, ident, nil
 	}

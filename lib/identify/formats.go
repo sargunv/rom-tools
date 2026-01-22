@@ -295,11 +295,20 @@ func identifyXISO(r io.ReaderAt, size int64) (*GameIdent, error) {
 }
 
 func identifyCHD(r io.ReaderAt, size int64) (*GameIdent, error) {
-	isoReader, isoSize, err := chd.OpenUserData(r, size)
+	reader, err := chd.NewReader(r, size)
 	if err != nil {
 		return nil, err
 	}
-	return identifyISO9660(isoReader, isoSize)
+
+	// Find first non-audio track
+	for _, track := range reader.Tracks {
+		if track.Type != "AUDIO" {
+			return identifyISO9660(track.Open(), track.Size())
+		}
+	}
+
+	// No tracks or all audio - try raw CHD access
+	return identifyISO9660(reader, reader.Size())
 }
 
 // Dispatcher: ISO9660 (tries Saturn, Dreamcast, PlayStation, PSP)

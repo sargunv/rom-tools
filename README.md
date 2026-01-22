@@ -32,7 +32,7 @@ Maturity legend:
 
 - 🧹 [./lib/format/chd](./lib/format/chd): Implementation of the CHD (Compressed Hunks of Data) disc image format.
 - 🧹 [./lib/format/dreamcast](./lib/format/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
-- 🧹 [./lib/format/gamecube](./lib/format/gamecube): GameCube and Wii disc header parsing, including RVZ support.
+- 🏗️ [./lib/format/gamecube](./lib/format/gamecube): GameCube and Wii disc header parsing, including RVZ support.
 - 🧹 [./lib/format/gb](./lib/format/gb): Game Boy and Game Boy Color ROM header parsing.
 - 🧹 [./lib/format/gba](./lib/format/gba): Game Boy Advance ROM header parsing.
 - 🤖 [./lib/format/iso9660](./lib/format/iso9660): ISO 9660 filesystem image parsing for optical disk platforms.

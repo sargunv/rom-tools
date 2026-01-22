@@ -1,6 +1,9 @@
 // Package chd provides support for reading CHD (Compressed Hunks of Data) files.
 // CHD is MAME's compressed disc image format.
 //
+// The API mirrors archive/zip: use NewReader to open a CHD, then access
+// individual tracks via the Tracks slice.
+//
 // Format specification: https://github.com/mamedev/mame/blob/master/src/lib/util/chd.h
 package chd
 
@@ -55,161 +58,76 @@ const (
 	CodecCDZstd Codec = 0x63647a73 // 'cdzs'
 )
 
-// CHDInfo contains metadata extracted from a CHD file header.
-type CHDInfo struct {
-	// Version is the CHD format version.
-	Version uint32
-	// Compressors contains up to 4 compression codecs.
-	Compressors [4]Codec
-	// LogicalBytes is the total uncompressed size.
+// Header contains metadata extracted from a CHD file header.
+type Header struct {
+	Version      uint32
+	Compressors  [4]Codec
 	LogicalBytes uint64
-	// MapOffset is the offset to hunk map.
-	MapOffset uint64
-	// MetaOffset is the offset to metadata.
-	MetaOffset uint64
-	// HunkBytes is the bytes per hunk.
-	HunkBytes uint32
-	// UnitBytes is the bytes per unit (sector size).
-	UnitBytes uint32
-	// TotalHunks is calculated as LogicalBytes / HunkBytes.
-	TotalHunks uint32
-	// RawSHA1 is the SHA1 of the raw (uncompressed) data.
-	RawSHA1 string
-	// SHA1 is the SHA1 of the compressed data.
-	SHA1 string
-	// ParentSHA1 is the SHA1 of parent CHD (for diffs), empty if standalone.
-	ParentSHA1 string
+	MapOffset    uint64
+	HunkBytes    uint32
+	UnitBytes    uint32
+	TotalHunks   uint32
+	RawSHA1      string
+	SHA1         string
+	ParentSHA1   string
 }
 
-// ParseCHD reads and parses a CHD file header.
-func ParseCHD(r io.ReaderAt, size int64) (*CHDInfo, error) {
-	if size < headerSize {
-		return nil, fmt.Errorf("file too small for CHD header: need %d bytes, got %d", headerSize, size)
-	}
-
-	header := make([]byte, headerSize)
-	if _, err := r.ReadAt(header, 0); err != nil {
-		return nil, fmt.Errorf("failed to read CHD header: %w", err)
-	}
-
-	// Verify magic
-	if string(header[0:8]) != "MComprHD" {
-		return nil, fmt.Errorf("not a valid CHD file: invalid magic")
-	}
-
-	// Header length (big-endian uint32 at offset 8)
-	headerLen := binary.BigEndian.Uint32(header[8:12])
-
-	// Version (big-endian uint32 at offset 12)
-	version := binary.BigEndian.Uint32(header[12:16])
-
-	if version < 5 {
-		return nil, fmt.Errorf("CHD version %d not supported (only v5+ supported)", version)
-	}
-
-	if headerLen < headerSize {
-		return nil, fmt.Errorf("CHD header too small: %d bytes", headerLen)
-	}
-
-	// Compressors (4 x uint32 at offsets 16-31)
-	var compressors [4]Codec
-	for i := range 4 {
-		compressors[i] = Codec(binary.BigEndian.Uint32(header[16+i*4:]))
-	}
-
-	// Logical bytes (uint64 at offset 32)
-	logicalBytes := binary.BigEndian.Uint64(header[32:40])
-
-	// Map offset (uint64 at offset 40)
-	mapOffset := binary.BigEndian.Uint64(header[40:48])
-
-	// Metadata offset (uint64 at offset 48)
-	metaOffset := binary.BigEndian.Uint64(header[48:56])
-
-	// Hunk bytes (uint32 at offset 56)
-	hunkBytes := binary.BigEndian.Uint32(header[56:60])
-
-	// Unit bytes (uint32 at offset 60)
-	unitBytes := binary.BigEndian.Uint32(header[60:64])
-
-	// Calculate total hunks
-	var totalHunks uint32
-	if hunkBytes > 0 {
-		totalHunks = uint32((logicalBytes + uint64(hunkBytes) - 1) / uint64(hunkBytes))
-	}
-
-	// Raw SHA1 at offset 64 (20 bytes) - SHA1 of the uncompressed data
-	rawSHA1 := hex.EncodeToString(header[rawSHA1Offset : rawSHA1Offset+sha1Size])
-
-	// SHA1 at offset 84 (20 bytes) - SHA1 of the compressed data
-	sha1 := hex.EncodeToString(header[sha1Offset : sha1Offset+sha1Size])
-
-	// Parent SHA1 at offset 104 (20 bytes) - all zeros if no parent
-	parentSHA1Bytes := header[parentSHA1Offset : parentSHA1Offset+sha1Size]
-	parentSHA1 := ""
-	for _, b := range parentSHA1Bytes {
-		if b != 0 {
-			parentSHA1 = hex.EncodeToString(parentSHA1Bytes)
-			break
-		}
-	}
-
-	return &CHDInfo{
-		Version:      version,
-		Compressors:  compressors,
-		LogicalBytes: logicalBytes,
-		MapOffset:    mapOffset,
-		MetaOffset:   metaOffset,
-		HunkBytes:    hunkBytes,
-		UnitBytes:    unitBytes,
-		TotalHunks:   totalHunks,
-		RawSHA1:      rawSHA1,
-		SHA1:         sha1,
-		ParentSHA1:   parentSHA1,
-	}, nil
-}
-
-// IsCDROM returns true if this appears to be a CD-ROM image based on unit size.
-func (h *CHDInfo) IsCDROM() bool {
-	// CD-ROM CHDs typically use 2448 bytes per unit (2352 sector + 96 subcode)
-	// or 2352 bytes per unit
-	return h.UnitBytes == 2448 || h.UnitBytes == 2352
-}
-
-// Reader provides sector-level access to CHD files.
+// Reader provides access to a CHD file's contents.
+// It mirrors the archive/zip.Reader pattern.
 type Reader struct {
+	// Tracks contains all tracks in the CHD (like zip.Reader.File).
+	// For single-track images, this will have one entry.
+	// For multi-track CDs (e.g., with audio tracks), iterate to find data tracks.
+	Tracks []*Track
+
 	file      io.ReaderAt
-	header    *CHDInfo
+	header    *Header
 	hunkMap   *chdMap
 	hunkCache map[uint32][]byte
 	cacheMu   sync.RWMutex
 }
 
-// Open creates a new CHD Reader for raw sector access.
-func Open(r io.ReaderAt, size int64) (*Reader, error) {
-	// Parse header
-	header, err := ParseCHD(r, size)
+// NewReader creates a Reader reading from r, which must be an io.ReaderAt.
+// This mirrors the archive/zip.NewReader pattern.
+func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
+	header, err := parseHeader(r, size)
 	if err != nil {
 		return nil, fmt.Errorf("parse header: %w", err)
 	}
 
-	// Check for unsupported features
 	if header.ParentSHA1 != "" {
 		return nil, fmt.Errorf("parent CHD references not supported")
 	}
 
-	// Decode hunk map
 	hunkMap, err := decodeMap(r, header)
 	if err != nil {
 		return nil, fmt.Errorf("decode hunk map: %w", err)
 	}
 
-	return &Reader{
+	reader := &Reader{
 		file:      r,
 		header:    header,
 		hunkMap:   hunkMap,
 		hunkCache: make(map[uint32][]byte),
-	}, nil
+	}
+
+	// Parse track metadata
+	reader.Tracks, err = parseTrackMetadata(r, header, reader)
+	if err != nil {
+		return nil, fmt.Errorf("parse tracks: %w", err)
+	}
+
+	return reader, nil
+}
+
+// Header returns the CHD header information.
+func (r *Reader) Header() *Header {
+	return r.header
+}
+
+// Size returns the logical (uncompressed) size in bytes.
+func (r *Reader) Size() int64 {
+	return int64(r.header.LogicalBytes)
 }
 
 // ReadAt implements io.ReaderAt, reading from the logical (uncompressed) data.
@@ -226,20 +144,17 @@ func (r *Reader) ReadAt(p []byte, off int64) (n int, err error) {
 	pos := off
 
 	for remaining > 0 && pos < int64(r.header.LogicalBytes) {
-		// Calculate which hunk contains this position
 		hunkNum := uint32(pos / hunkBytes)
 		hunkOffset := int(pos % hunkBytes)
 
-		// Get the decompressed hunk
 		hunkData, err := r.readHunk(hunkNum)
 		if err != nil {
 			if n > 0 {
-				return n, nil // Return partial read
+				return n, nil
 			}
 			return 0, fmt.Errorf("read hunk %d: %w", hunkNum, err)
 		}
 
-		// Copy data from this hunk
 		available := len(hunkData) - hunkOffset
 		if available <= 0 {
 			break
@@ -260,7 +175,6 @@ func (r *Reader) ReadAt(p []byte, off int64) (n int, err error) {
 
 // readHunk reads and decompresses a single hunk.
 func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
-	// Check cache first
 	r.cacheMu.RLock()
 	if cached, ok := r.hunkCache[hunkNum]; ok {
 		r.cacheMu.RUnlock()
@@ -280,7 +194,6 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 
 	switch entry.compression {
 	case compressionNone:
-		// Uncompressed - read directly from file
 		data = make([]byte, hunkBytes)
 		_, err = r.file.ReadAt(data, int64(entry.offset))
 		if err != nil {
@@ -288,7 +201,6 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 		}
 
 	case compressionType0, compressionType1, compressionType2, compressionType3:
-		// Compressed - use the corresponding compressor
 		codecID := r.header.Compressors[entry.compression]
 
 		compressed := make([]byte, entry.length)
@@ -303,7 +215,6 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 		}
 
 	case compressionSelf:
-		// Self-reference - copy from another hunk
 		refHunk := uint32(entry.offset)
 		if refHunk >= hunkNum {
 			return nil, fmt.Errorf("self-reference to hunk %d from hunk %d (forward reference)", refHunk, hunkNum)
@@ -312,7 +223,6 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read self-referenced hunk %d: %w", refHunk, err)
 		}
-		// Make a copy so cache entries don't share backing arrays
 		data = append([]byte(nil), data...)
 
 	case compressionParent:
@@ -322,9 +232,8 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 		return nil, fmt.Errorf("unknown compression type: %d", entry.compression)
 	}
 
-	// Cache the decompressed hunk (limit cache size to avoid memory issues)
 	r.cacheMu.Lock()
-	if len(r.hunkCache) < 32 { // Cache up to 32 hunks
+	if len(r.hunkCache) < 32 {
 		r.hunkCache[hunkNum] = data
 	}
 	r.cacheMu.Unlock()
@@ -333,8 +242,6 @@ func (r *Reader) readHunk(hunkNum uint32) ([]byte, error) {
 }
 
 // readSector reads a single sector (unit) from the CHD.
-// For CD-ROM, this returns 2352 bytes (raw frame) or 2448 bytes (frame + subcode).
-// For DVD/other, this returns the unit size specified in the header.
 func (r *Reader) readSector(sectorNum uint64) ([]byte, error) {
 	unitBytes := uint64(r.header.UnitBytes)
 	offset := int64(sectorNum * unitBytes)
@@ -347,92 +254,68 @@ func (r *Reader) readSector(sectorNum uint64) ([]byte, error) {
 	return data[:n], nil
 }
 
-// Header returns the CHD header information.
-func (r *Reader) Header() *CHDInfo {
-	return r.header
-}
-
-// Size returns the logical (uncompressed) size in bytes.
-func (r *Reader) Size() int64 {
-	return int64(r.header.LogicalBytes)
-}
-
-// OpenUserData returns an io.ReaderAt suitable for filesystem parsing
-// (ISO9660, UDF, etc.) from a CHD file. For CD-ROM CHDs, it handles sector
-// translation, extracting 2048-byte user data from raw 2352-byte sectors.
-// For DVD/other CHDs, it returns the raw sector data directly.
-func OpenUserData(r io.ReaderAt, size int64) (io.ReaderAt, int64, error) {
-	reader, err := Open(r, size)
-	if err != nil {
-		return nil, 0, err
+// parseHeader reads and parses a CHD file header.
+func parseHeader(r io.ReaderAt, size int64) (*Header, error) {
+	if size < headerSize {
+		return nil, fmt.Errorf("file too small for CHD header: need %d bytes, got %d", headerSize, size)
 	}
 
-	if reader.header.IsCDROM() {
-		// CD-ROM CHD: sectors are 2448 bytes (2352 data + 96 subcode)
-		// User data is at offset 16 within the 2352-byte sector data
-		isoReader := &sectorReader{
-			reader:     reader,
-			sectorSize: int64(reader.header.UnitBytes),
-			dataOffset: 16, // Mode 1 data offset within sector
-		}
-		// Calculate logical size (number of sectors * 2048)
-		numSectors := int64(reader.header.LogicalBytes) / int64(reader.header.UnitBytes)
-		return isoReader, numSectors * 2048, nil
+	buf := make([]byte, headerSize)
+	if _, err := r.ReadAt(buf, 0); err != nil {
+		return nil, fmt.Errorf("failed to read CHD header: %w", err)
 	}
 
-	// DVD/other CHD: sectors are typically 2048 bytes (no translation needed)
-	return reader, int64(reader.header.LogicalBytes), nil
-}
-
-// sectorReader translates logical 2048-byte sector reads to CHD raw sector reads.
-// For CD-ROM CHDs, it extracts user data from raw 2352-byte sectors.
-type sectorReader struct {
-	reader     *Reader
-	sectorSize int64 // Physical sector size (typically 2448 for CD-ROM)
-	dataOffset int64 // Offset to user data within physical sector (16 for Mode 1)
-}
-
-// ReadAt implements io.ReaderAt, reading logical data from CHD sectors.
-func (c *sectorReader) ReadAt(p []byte, off int64) (int, error) {
-	n := 0
-	for n < len(p) {
-		logicalOffset := off + int64(n)
-
-		// Which logical sector (2048-byte)?
-		logicalSector := logicalOffset / 2048
-		offsetInSector := logicalOffset % 2048
-
-		// Read the physical sector from CHD
-		sectorData, err := c.reader.readSector(uint64(logicalSector))
-		if err != nil {
-			if n > 0 {
-				return n, nil
-			}
-			return 0, err
-		}
-
-		// Extract user data starting at dataOffset
-		// For CD-ROM Mode 1: bytes 16-2063 of the 2352-byte sector
-		dataStart := int(c.dataOffset + offsetInSector)
-		dataEnd := int(c.dataOffset) + 2048
-
-		if dataStart >= len(sectorData) {
-			if n > 0 {
-				return n, nil
-			}
-			return 0, io.EOF
-		}
-
-		if dataEnd > len(sectorData) {
-			dataEnd = len(sectorData)
-		}
-
-		// Copy available data
-		bytesToCopy := min(dataEnd-dataStart, len(p)-n)
-
-		copy(p[n:n+bytesToCopy], sectorData[dataStart:dataStart+bytesToCopy])
-		n += bytesToCopy
+	if string(buf[0:8]) != "MComprHD" {
+		return nil, fmt.Errorf("not a valid CHD file: invalid magic")
 	}
 
-	return n, nil
+	headerLen := binary.BigEndian.Uint32(buf[8:12])
+	version := binary.BigEndian.Uint32(buf[12:16])
+
+	if version < 5 {
+		return nil, fmt.Errorf("CHD version %d not supported (only v5+ supported)", version)
+	}
+	if headerLen < headerSize {
+		return nil, fmt.Errorf("CHD header too small: %d bytes", headerLen)
+	}
+
+	var compressors [4]Codec
+	for i := range 4 {
+		compressors[i] = Codec(binary.BigEndian.Uint32(buf[16+i*4:]))
+	}
+
+	logicalBytes := binary.BigEndian.Uint64(buf[32:40])
+	mapOffset := binary.BigEndian.Uint64(buf[40:48])
+	hunkBytes := binary.BigEndian.Uint32(buf[56:60])
+	unitBytes := binary.BigEndian.Uint32(buf[60:64])
+
+	var totalHunks uint32
+	if hunkBytes > 0 {
+		totalHunks = uint32((logicalBytes + uint64(hunkBytes) - 1) / uint64(hunkBytes))
+	}
+
+	rawSHA1 := hex.EncodeToString(buf[rawSHA1Offset : rawSHA1Offset+sha1Size])
+	sha1 := hex.EncodeToString(buf[sha1Offset : sha1Offset+sha1Size])
+
+	parentSHA1Bytes := buf[parentSHA1Offset : parentSHA1Offset+sha1Size]
+	parentSHA1 := ""
+	for _, b := range parentSHA1Bytes {
+		if b != 0 {
+			parentSHA1 = hex.EncodeToString(parentSHA1Bytes)
+			break
+		}
+	}
+
+	return &Header{
+		Version:      version,
+		Compressors:  compressors,
+		LogicalBytes: logicalBytes,
+		MapOffset:    mapOffset,
+		HunkBytes:    hunkBytes,
+		UnitBytes:    unitBytes,
+		TotalHunks:   totalHunks,
+		RawSHA1:      rawSHA1,
+		SHA1:         sha1,
+		ParentSHA1:   parentSHA1,
+	}, nil
 }

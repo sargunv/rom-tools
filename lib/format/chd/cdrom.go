@@ -1,13 +1,7 @@
 package chd
 
 import (
-	"bytes"
-	"compress/flate"
-	"encoding/binary"
 	"fmt"
-	"io"
-
-	"github.com/ulikunitz/xz/lzma"
 )
 
 // CD-ROM frame constants (from libchdr/cdrom.h)
@@ -16,21 +10,6 @@ const (
 	cdMaxSubcodeData = 96   // Subcode data per frame
 	cdFrameSize      = 2448 // cdMaxSectorData + cdMaxSubcodeData
 )
-
-// decompressCDZlib decompresses CD-ROM data with zlib base compression.
-func decompressCDZlib(data []byte, hunkBytes uint32) ([]byte, error) {
-	return decompressCDCodec(data, hunkBytes, decompressZlibRaw, "zlib")
-}
-
-// decompressCDLZMA decompresses CD-ROM data with LZMA base compression.
-func decompressCDLZMA(data []byte, hunkBytes uint32) ([]byte, error) {
-	return decompressCDCodec(data, hunkBytes, decompressLZMARaw, "lzma")
-}
-
-// decompressCDZstd decompresses CD-ROM data with Zstandard base compression.
-func decompressCDZstd(data []byte, hunkBytes uint32) ([]byte, error) {
-	return decompressCDCodec(data, hunkBytes, decompressZstdRaw, "zstd")
-}
 
 // decompressCDCodec is the common implementation for CD codecs.
 // Format: [ECC bitmap] [compressed base length] [base data (sector)] [subcode data (zlib)]
@@ -80,7 +59,7 @@ func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte
 	expectedSubcodeSize := frames * cdMaxSubcodeData
 	var subcodeData []byte
 	if len(subcodeCompressed) > 0 {
-		subcodeData, err = decompressZlibRaw(subcodeCompressed, expectedSubcodeSize)
+		subcodeData, err = decompressZlib(subcodeCompressed, expectedSubcodeSize)
 		if err != nil {
 			return nil, fmt.Errorf("CD codec subcode decompress: %w", err)
 		}
@@ -107,63 +86,5 @@ func decompressCDCodec(data []byte, hunkBytes uint32, baseDecompress func([]byte
 		}
 	}
 
-	return result, nil
-}
-
-// Raw decompression functions (without CHD-specific headers)
-
-func decompressZlibRaw(data []byte, outputSize int) ([]byte, error) {
-	r := flate.NewReader(bytes.NewReader(data))
-	defer r.Close()
-
-	result := make([]byte, outputSize)
-	n, err := io.ReadFull(r, result)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-		return nil, err
-	}
-	return result[:n], nil
-}
-
-func decompressLZMARaw(data []byte, outputSize int) ([]byte, error) {
-	if len(data) == 0 {
-		return nil, fmt.Errorf("LZMA data empty")
-	}
-
-	// CHD CD LZMA uses default properties: lc=3, lp=0, pb=2
-	// Properties byte = (pb * 5 + lp) * 9 + lc = (2*5 + 0)*9 + 3 = 93 = 0x5D
-	propsByte := byte(0x5D)
-
-	// Dictionary size: use a reasonable size for CD data
-	dictSize := uint32(65536)
-	if outputSize > 65536 {
-		dictSize = uint32(outputSize)
-	}
-
-	// Build standard LZMA header
-	header := make([]byte, 13)
-	header[0] = propsByte
-	binary.LittleEndian.PutUint32(header[1:5], dictSize)
-	binary.LittleEndian.PutUint64(header[5:13], uint64(outputSize))
-
-	fullData := append(header, data...)
-
-	r, err := lzma.NewReader(bytes.NewReader(fullData))
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]byte, outputSize)
-	n, err := io.ReadFull(r, result)
-	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-		return nil, err
-	}
-	return result[:n], nil
-}
-
-func decompressZstdRaw(data []byte, outputSize int) ([]byte, error) {
-	result, err := zstdDecoder.DecodeAll(data, make([]byte, 0, outputSize))
-	if err != nil {
-		return nil, err
-	}
 	return result, nil
 }
