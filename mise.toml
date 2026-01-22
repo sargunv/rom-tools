@@ -14,7 +14,12 @@ prettier = "latest"
 _.file = '.env'
 
 [tasks.setup]
-run = ["mise install", "hk install", "mise lock"]
+run = [
+  "mise install",
+  "hk install",
+  "cp scripts/post-checkout .git/hooks/post-checkout && chmod +x .git/hooks/post-checkout",
+  "mise lock",
+]
 
 [tasks.build]
 run = "go build ./..."

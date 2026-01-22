@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+mise trust
+
+main=$(git worktree list --porcelain | head -1 | sed 's/worktree //')
+if [ "$main" != "$(pwd)" ] && [ -f "$main/.claude/settings.local.json" ]; then
+  mkdir -p .claude && cp "$main/.claude/settings.local.json" .claude/
+fi
