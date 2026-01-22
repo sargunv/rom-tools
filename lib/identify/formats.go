@@ -97,7 +97,7 @@ func dreamcastInfoToGameIdent(info *dreamcast.DreamcastInfo) *GameIdent {
 func cnfInfoToGameIdent(info *playstation_cnf.CNFInfo) *GameIdent {
 	return &GameIdent{
 		Platform: info.Platform,
-		Serial:   info.DiscID(),
+		Serial:   info.DiscID,
 		Extra:    info,
 	}
 }
@@ -333,14 +333,14 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 
 	// Try to read SYSTEM.CNF (PS1/PS2 discs)
 	if data, err := img.ReadFile("SYSTEM.CNF"); err == nil {
-		if info, err := playstation_cnf.ParseCNF(bytes.NewReader(data), int64(len(data))); err == nil {
+		if info, err := playstation_cnf.Parse(bytes.NewReader(data), int64(len(data))); err == nil {
 			return cnfInfoToGameIdent(info), nil
 		}
 	}
 
 	// Try to read PSP_GAME/PARAM.SFO (PSP/PS3/Vita/PS4 discs)
 	if data, err := img.ReadFile("PSP_GAME/PARAM.SFO"); err == nil {
-		if info, err := playstation_sfo.ParseSFO(bytes.NewReader(data), int64(len(data))); err == nil {
+		if info, err := playstation_sfo.Parse(bytes.NewReader(data), int64(len(data))); err == nil {
 			return sfoInfoToGameIdent(info), nil
 		}
 	}

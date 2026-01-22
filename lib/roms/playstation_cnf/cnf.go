@@ -47,19 +47,16 @@ type CNFInfo struct {
 	Platform core.Platform `json:",omitempty"`
 	// BootPath is the raw boot path from BOOT/BOOT2 line (e.g., "cdrom0:\SLUS_123.45;1").
 	BootPath string `json:",omitempty"`
+	// DiscID is the game identifier extracted from the boot path (e.g., "SLUS_123.45").
+	DiscID string `json:",omitempty"`
 	// Version is the disc version from VER line (PS2 only).
 	Version string `json:",omitempty"`
 	// VideoMode is NTSC or PAL (PS2 only).
 	VideoMode VideoMode `json:",omitempty"`
 }
 
-// DiscID extracts the game identifier from the boot path (e.g., "SLUS_123.45").
-func (c *CNFInfo) DiscID() string {
-	return extractDiscID(c.BootPath)
-}
-
-// ParseCNF parses PlayStation SYSTEM.CNF content from a reader.
-func ParseCNF(r io.ReaderAt, size int64) (*CNFInfo, error) {
+// Parse parses PlayStation SYSTEM.CNF content from a reader.
+func Parse(r io.ReaderAt, size int64) (*CNFInfo, error) {
 	data := make([]byte, size)
 	if _, err := r.ReadAt(data, 0); err != nil {
 		return nil, fmt.Errorf("failed to read SYSTEM.CNF: %w", err)
@@ -105,6 +102,8 @@ func parseCNFBytes(data []byte) (*CNFInfo, error) {
 	if info.BootPath == "" {
 		return nil, fmt.Errorf("not a valid PlayStation SYSTEM.CNF: no boot path found")
 	}
+
+	info.DiscID = extractDiscID(info.BootPath)
 
 	return info, nil
 }

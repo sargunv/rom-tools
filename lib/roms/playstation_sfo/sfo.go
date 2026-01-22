@@ -34,49 +34,80 @@ const (
 	formatInt32       = 0x0404 // 32-bit unsigned integer
 )
 
-// SFOData represents parsed SFO key-value data.
+// sfoData represents parsed SFO key-value data.
 // String values are returned as string, integers as uint32.
-type SFOData map[string]any
+type sfoData map[string]any
 
 // SFOInfo contains metadata extracted from an SFO file with platform detection.
 type SFOInfo struct {
 	// Platform is PSP, PS3, Vita, or PS4, determined from DISC_ID prefix.
-	Platform core.Platform
+	Platform core.Platform `json:",omitempty"`
 	// DiscID is the game identifier (e.g., "ULUS10041", "BLUS30001").
-	DiscID string
+	DiscID string `json:",omitempty"`
 	// Title is the game title from the SFO.
-	Title string
+	Title string `json:",omitempty"`
 	// Category is the content category (e.g., "UG" for UMD game).
-	Category string
+	Category string `json:",omitempty"`
+	// Version is the disc media version (DISC_VERSION).
+	Version string `json:",omitempty"`
+	// AppVersion is the application/patch version (APP_VER).
+	AppVersion string `json:",omitempty"`
+	// DiscNumber is the disc number for multi-disc games (DISC_NUMBER, 1-indexed).
+	DiscNumber int `json:",omitempty"`
+	// DiscTotal is the total number of discs for multi-disc games (DISC_TOTAL).
+	DiscTotal int `json:",omitempty"`
+	// ParentalLevel is the content rating level (PARENTAL_LEVEL).
+	ParentalLevel int `json:",omitempty"`
+	// SystemVersion is the required system version (PSP_SYSTEM_VER or PS3_SYSTEM_VER).
+	SystemVersion string `json:",omitempty"`
+	// Region is the geographic region code (REGION).
+	Region int `json:",omitempty"`
 }
 
-// ParseSFO reads an SFO file and returns high-level game information.
-func ParseSFO(r io.ReaderAt, size int64) (*SFOInfo, error) {
-	data, err := parseSFOData(r, size)
+// Parse reads an SFO file and returns high-level game information.
+func Parse(r io.ReaderAt, size int64) (*SFOInfo, error) {
+	data, err := parsesfoData(r, size)
 	if err != nil {
 		return nil, err
 	}
 
+	// Try DISC_ID first, fall back to TITLE_ID (PS3 compatibility)
 	discID := getString(data, "DISC_ID")
 	if discID == "" {
-		return nil, fmt.Errorf("not a valid SFO: missing DISC_ID")
+		discID = getString(data, "TITLE_ID")
+	}
+	if discID == "" {
+		return nil, fmt.Errorf("not a valid SFO: missing DISC_ID or TITLE_ID")
 	}
 
 	platform := detectPlatform(discID)
 
+	// Try PSP_SYSTEM_VER first, then PS3_SYSTEM_VER
+	systemVer := getString(data, "PSP_SYSTEM_VER")
+	if systemVer == "" {
+		systemVer = getString(data, "PS3_SYSTEM_VER")
+	}
+
 	return &SFOInfo{
-		Platform: platform,
-		DiscID:   discID,
-		Title:    getString(data, "TITLE"),
-		Category: getString(data, "CATEGORY"),
+		Platform:      platform,
+		DiscID:        discID,
+		Title:         getString(data, "TITLE"),
+		Category:      getString(data, "CATEGORY"),
+		Version:       getString(data, "DISC_VERSION"),
+		AppVersion:    getString(data, "APP_VER"),
+		DiscNumber:    getInt(data, "DISC_NUMBER"),
+		DiscTotal:     getInt(data, "DISC_TOTAL"),
+		ParentalLevel: getInt(data, "PARENTAL_LEVEL"),
+		SystemVersion: systemVer,
+		Region:        getInt(data, "REGION"),
 	}, nil
 }
 
 // detectPlatform determines the PlayStation platform from the DISC_ID prefix.
 //
 // Platform prefixes:
-//   - PSP: ULUS, UCUS, ULES, UCES, ULJS, UCJS, ULAS, ULKS, NPxx (digital)
-//   - PS3: BLUS, BLES, BLJM, BCUS, BCES, NPUB, NPEB, NPJB, etc.
+//   - PSP: ULUS, UCUS, ULES, UCES, ULJS, UCJS, ULAS, ULKS, NPxG/NPxH (digital)
+//   - PS3: BLUS, BLES, BLJM, BCUS, BCES, NPxB (digital), etc.
 //   - Vita: PCSA, PCSB, PCSE, PCSH, PCSG, PCSD, etc.
 //   - PS4: CUSA, PLAS, etc.
 func detectPlatform(discID string) core.Platform {
@@ -91,9 +122,13 @@ func detectPlatform(discID string) core.Platform {
 	case "ULUS", "UCUS", // US
 		"ULES", "UCES", // EU
 		"ULJS", "UCJS", // JP
-		"ULAS",                                 // Asia
-		"ULKS",                                 // Korea
-		"NPUG", "NPEG", "NPJG", "NPAG", "NPHG": // PSN digital
+		"ULAS", "UCAS", // Asia
+		"ULKS", "UCKS", // Korea
+		"NPUG", "NPUH", // PSN digital US
+		"NPEG", "NPEH", // PSN digital EU
+		"NPJG", "NPJH", "NPJJ", // PSN digital JP
+		"NPAG", "NPAH", // PSN digital Asia
+		"NPHG", "NPHH": // PSN digital HK
 		return core.PlatformPSP
 	}
 
@@ -101,18 +136,19 @@ func detectPlatform(discID string) core.Platform {
 	switch prefix {
 	case "BLUS", "BCUS", // US
 		"BLES", "BCES", // EU
-		"BLJM", "BCJS", // JP
+		"BLJM", "BLJS", "BCJS", // JP
 		"BLAS", "BCAS", // Asia
+		"BLKS", "BCKS", // Korea
 		"NPUB", "NPEB", "NPJB", "NPAB", "NPHB": // PSN digital
 		return core.PlatformPS3
 	}
 
 	// Vita prefixes
 	switch prefix {
-	case "PCSA", // US
-		"PCSB",         // EU
-		"PCSE",         // EU (alternate)
-		"PCSG", "PCSH", // JP/Asia
+	case "PCSA", "PCSE", // US
+		"PCSB", "PCSF", // EU
+		"PCSC", "PCSG", "VLJM", // JP
+		"PCSH", // Asia
 		"PCSD": // Demo
 		return core.PlatformPSVita
 	}
@@ -142,8 +178,8 @@ func detectPlatform(discID string) core.Platform {
 	return ""
 }
 
-// parseSFOData reads an SFO file and returns raw key-value pairs.
-func parseSFOData(r io.ReaderAt, size int64) (SFOData, error) {
+// parsesfoData reads an SFO file and returns raw key-value pairs.
+func parsesfoData(r io.ReaderAt, size int64) (sfoData, error) {
 	if size < sfoHeaderMin {
 		return nil, fmt.Errorf("file too small for SFO header: need %d bytes, got %d", sfoHeaderMin, size)
 	}
@@ -168,7 +204,7 @@ func parseSFOData(r io.ReaderAt, size int64) (SFOData, error) {
 		return nil, fmt.Errorf("SFO table offsets out of bounds")
 	}
 
-	result := make(SFOData)
+	result := make(sfoData)
 
 	// Parse index entries (16 bytes each, starting at offset 20)
 	indexOffset := uint32(20)
@@ -225,9 +261,17 @@ func parseSFOData(r io.ReaderAt, size int64) (SFOData, error) {
 }
 
 // getString returns a string value from parsed SFO data.
-func getString(sfo SFOData, key string) string {
+func getString(sfo sfoData, key string) string {
 	if v, ok := sfo[key].(string); ok {
 		return v
 	}
 	return ""
+}
+
+// getInt returns an integer value from parsed SFO data.
+func getInt(sfo sfoData, key string) int {
+	if v, ok := sfo[key].(uint32); ok {
+		return int(v)
+	}
+	return 0
 }
