@@ -1,4 +1,4 @@
-package chd
+package codec
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ const (
 	huffmanMaxBits = 16 // Maximum code length
 )
 
-// huffmanDecoder decodes Huffman-encoded data.
-type huffmanDecoder struct {
+// HuffmanDecoder decodes Huffman-encoded data.
+type HuffmanDecoder struct {
 	numCodes uint32
 	maxBits  uint8
 	lookup   []huffmanLookup // fast lookup table indexed by maxBits-bit prefix
@@ -23,18 +23,19 @@ type huffmanLookup struct {
 	bits   uint8  // bits consumed
 }
 
-// bitReader reads bits from a byte slice (MSB first).
-type bitReader struct {
+// BitReader reads bits from a byte slice (MSB first).
+type BitReader struct {
 	data   []byte
 	bitPos uint32
 }
 
-func newBitReader(data []byte) *bitReader {
-	return &bitReader{data: data, bitPos: 0}
+// NewBitReader creates a new BitReader for the given data.
+func NewBitReader(data []byte) *BitReader {
+	return &BitReader{data: data, bitPos: 0}
 }
 
-// readBits reads n bits and returns them as a uint32.
-func (br *bitReader) readBits(n uint32) (uint32, error) {
+// ReadBits reads n bits and returns them as a uint32.
+func (br *BitReader) ReadBits(n uint32) (uint32, error) {
 	if n == 0 {
 		return 0, nil
 	}
@@ -59,8 +60,8 @@ func (br *bitReader) readBits(n uint32) (uint32, error) {
 	return result, nil
 }
 
-// bitsRemaining returns how many bits are left to read.
-func (br *bitReader) bitsRemaining() uint32 {
+// BitsRemaining returns how many bits are left to read.
+func (br *BitReader) BitsRemaining() uint32 {
 	totalBits := uint32(len(br.data)) * 8
 	if br.bitPos >= totalBits {
 		return 0
@@ -68,17 +69,17 @@ func (br *bitReader) bitsRemaining() uint32 {
 	return totalBits - br.bitPos
 }
 
-// newHuffmanDecoder creates a Huffman decoder for the given number of codes.
-func newHuffmanDecoder(numCodes uint32, maxBits uint8) *huffmanDecoder {
-	return &huffmanDecoder{
+// NewHuffmanDecoder creates a Huffman decoder for the given number of codes.
+func NewHuffmanDecoder(numCodes uint32, maxBits uint8) *HuffmanDecoder {
+	return &HuffmanDecoder{
 		numCodes: numCodes,
 		maxBits:  maxBits,
 	}
 }
 
-// importTreeRLE imports a Huffman tree encoded with RLE.
+// ImportTreeRLE imports a Huffman tree encoded with RLE.
 // This follows libchdr's huffman_import_tree_rle implementation exactly.
-func (hd *huffmanDecoder) importTreeRLE(br *bitReader) error {
+func (hd *HuffmanDecoder) ImportTreeRLE(br *BitReader) error {
 	// Determine bits per entry based on maxBits
 	var numBits uint32
 	if hd.maxBits >= 16 {
@@ -95,7 +96,7 @@ func (hd *huffmanDecoder) importTreeRLE(br *bitReader) error {
 
 	for curNode < hd.numCodes {
 		// Read raw value
-		nodeBits, err := br.readBits(numBits)
+		nodeBits, err := br.ReadBits(numBits)
 		if err != nil {
 			return fmt.Errorf("failed to read huffman bits at node %d: %w", curNode, err)
 		}
@@ -106,7 +107,7 @@ func (hd *huffmanDecoder) importTreeRLE(br *bitReader) error {
 			curNode++
 		} else {
 			// One is an escape code - read another value
-			nodeBits, err = br.readBits(numBits)
+			nodeBits, err = br.ReadBits(numBits)
 			if err != nil {
 				return fmt.Errorf("failed to read escape value at node %d: %w", curNode, err)
 			}
@@ -117,7 +118,7 @@ func (hd *huffmanDecoder) importTreeRLE(br *bitReader) error {
 				curNode++
 			} else {
 				// Otherwise read repeat count: the value is repeated (count+3) times
-				repCount, err := br.readBits(numBits)
+				repCount, err := br.ReadBits(numBits)
 				if err != nil {
 					return fmt.Errorf("failed to read repeat count at node %d: %w", curNode, err)
 				}
@@ -141,7 +142,7 @@ func (hd *huffmanDecoder) importTreeRLE(br *bitReader) error {
 
 // buildFromBitLengths builds the lookup table from bit lengths (canonical Huffman).
 // Uses the same algorithm as libchdr/MAME for canonical code assignment.
-func (hd *huffmanDecoder) buildFromBitLengths(bitLengths []uint8) error {
+func (hd *HuffmanDecoder) buildFromBitLengths(bitLengths []uint8) error {
 	// Find actual maximum bit length used
 	actualMaxBits := uint8(0)
 	for _, bl := range bitLengths {
@@ -217,14 +218,14 @@ func (hd *huffmanDecoder) buildFromBitLengths(bitLengths []uint8) error {
 	return nil
 }
 
-// decode reads one symbol from the bit reader using the Huffman table.
-func (hd *huffmanDecoder) decode(br *bitReader) (uint32, error) {
+// Decode reads one symbol from the bit reader using the Huffman table.
+func (hd *HuffmanDecoder) Decode(br *BitReader) (uint32, error) {
 	if len(hd.lookup) == 0 {
 		return 0, fmt.Errorf("huffman table not initialized")
 	}
 
 	// Peek maxBits bits for lookup
-	remaining := br.bitsRemaining()
+	remaining := br.BitsRemaining()
 	peekBits := min(remaining, uint32(hd.maxBits))
 	if peekBits == 0 {
 		return 0, fmt.Errorf("no bits remaining")
@@ -233,7 +234,7 @@ func (hd *huffmanDecoder) decode(br *bitReader) (uint32, error) {
 	// Save position
 	startPos := br.bitPos
 
-	bits, err := br.readBits(peekBits)
+	bits, err := br.ReadBits(peekBits)
 	if err != nil {
 		return 0, err
 	}
@@ -252,4 +253,28 @@ func (hd *huffmanDecoder) decode(br *bitReader) (uint32, error) {
 	br.bitPos = startPos + uint32(entry.bits)
 
 	return uint32(entry.symbol), nil
+}
+
+// Huffman decompresses CHD Huffman-encoded data.
+func Huffman(data []byte, outputSize int) ([]byte, error) {
+	// CHD Huffman uses 8-bit symbols (256 codes)
+	hd := NewHuffmanDecoder(256, huffmanMaxBits)
+	br := NewBitReader(data)
+
+	// Import the Huffman tree from RLE-encoded data at start of stream
+	if err := hd.ImportTreeRLE(br); err != nil {
+		return nil, fmt.Errorf("huffman tree import: %w", err)
+	}
+
+	// Decode the data
+	result := make([]byte, outputSize)
+	for i := range outputSize {
+		sym, err := hd.Decode(br)
+		if err != nil {
+			return nil, fmt.Errorf("huffman decode at %d: %w", i, err)
+		}
+		result[i] = byte(sym)
+	}
+
+	return result, nil
 }
