@@ -17,7 +17,6 @@ _.file = '.env'
 run = [
   "mise install",
   "hk install",
-  "cp scripts/post-checkout .git/hooks/post-checkout && chmod +x .git/hooks/post-checkout",
   "mise lock",
 ]
 
