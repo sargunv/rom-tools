@@ -27,6 +27,7 @@ var registry = []formatEntry{
 	{FormatZ64, []string{".z64"}, identifyZ64},
 	{FormatV64, []string{".v64"}, identifyV64},
 	{FormatN64, []string{".n64"}, identifyN64},
+	{Format32X, []string{".32x"}, identify32X},
 	{FormatMD, []string{".md", ".gen"}, identifyMD},
 	{FormatSMD, []string{".smd"}, identifySMD},
 	{FormatSMS, []string{".sms"}, identifySMS},

@@ -33,6 +33,8 @@ const (
 
 	PlatformMS        Platform = "mastersystem"
 	PlatformMD        Platform = "megadrive"
+	PlatformSegaCD    Platform = "segacd"
+	Platform32X       Platform = "sega32x"
 	PlatformSaturn    Platform = "saturn"
 	PlatformDreamcast Platform = "dreamcast"
 

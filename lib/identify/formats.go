@@ -42,8 +42,15 @@ func mdInfoToGameIdent(info *megadrive.MDInfo) *GameIdent {
 	if title == "" {
 		title = info.DomesticTitle
 	}
+
+	// Determine platform based on whether this is a 32X ROM
+	platform := core.PlatformMD
+	if info.Is32X {
+		platform = core.Platform32X
+	}
+
 	return &GameIdent{
-		Platform: core.PlatformMD,
+		Platform: platform,
 		Title:    title,
 		Serial:   info.SerialNumber,
 		Extra:    info,
@@ -90,6 +97,21 @@ func dreamcastInfoToGameIdent(info *dreamcast.DreamcastInfo) *GameIdent {
 		Platform: core.PlatformDreamcast,
 		Title:    info.Title,
 		Serial:   info.ProductNumber,
+		Extra:    info,
+	}
+}
+
+func segaCDInfoToGameIdent(info *megadrive.SegaCDInfo) *GameIdent {
+	// Use overseas title if available, otherwise domestic title
+	title := info.OverseasTitle
+	if title == "" {
+		title = info.DomesticTitle
+	}
+
+	return &GameIdent{
+		Platform: core.PlatformSegaCD,
+		Title:    title,
+		Serial:   info.SerialNumber,
 		Extra:    info,
 	}
 }
@@ -269,6 +291,17 @@ func identifySMD(r io.ReaderAt, size int64) (*GameIdent, error) {
 	return mdInfoToGameIdent(info), nil
 }
 
+func identify32X(r io.ReaderAt, size int64) (*GameIdent, error) {
+	info, err := megadrive.Parse(r, size)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Is32X {
+		return nil, fmt.Errorf("not a 32X ROM: MARS header not found")
+	}
+	return mdInfoToGameIdent(info), nil
+}
+
 func identifyRVZ(r io.ReaderAt, size int64) (*GameIdent, error) {
 	rvzInfo, err := gamecube.ParseRVZ(r, size)
 	if err != nil {
@@ -321,9 +354,12 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 		return nil, err
 	}
 
-	// Try to read system area (sector 0) for Saturn/Dreamcast identification
+	// Try to read system area (sector 0) for Sega CD/Saturn/Dreamcast identification
 	systemArea := make([]byte, 2048)
 	if _, err := reader.ReadAt(systemArea, 0); err == nil {
+		if info, err := megadrive.ParseSegaCD(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
+			return segaCDInfoToGameIdent(info), nil
+		}
 		if info, err := saturn.ParseSaturn(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
 			return saturnInfoToGameIdent(info), nil
 		}
