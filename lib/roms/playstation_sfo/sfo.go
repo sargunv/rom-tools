@@ -1,6 +1,7 @@
 package playstation_sfo
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -245,12 +246,13 @@ func parsesfoData(r io.ReaderAt, size int64) (sfoData, error) {
 				result[key] = binary.LittleEndian.Uint32(data[dataStart:])
 			}
 		case formatUTF8, formatUTF8Special:
-			// Trim null terminator if present
 			strData := data[dataStart : dataStart+dataLen]
-			for len(strData) > 0 && strData[len(strData)-1] == 0 {
-				strData = strData[:len(strData)-1]
+			// Truncate at first null byte (everything after is garbage)
+			if idx := bytes.IndexByte(strData, 0); idx >= 0 {
+				strData = strData[:idx]
 			}
-			result[key] = string(strData)
+			// Trim whitespace
+			result[key] = strings.TrimSpace(string(strData))
 		default:
 			// Unknown format, store as raw bytes
 			result[key] = data[dataStart : dataStart+dataLen]
