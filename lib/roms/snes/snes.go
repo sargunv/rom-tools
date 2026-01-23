@@ -292,7 +292,10 @@ func isValidSNESHeader(info *SNESInfo, fileSize int64) bool {
 	// 2. Map mode should be in valid range (0x20-0x3F)
 	//    All known map modes have high nibble 0x2 or 0x3
 	if info.MapMode < 0x20 || info.MapMode > 0x3F {
-		return false
+		// Check for known games with header bugs before rejecting
+		if !isKnownHeaderBug(info) {
+			return false
+		}
 	}
 
 	// 3. Title should have at least some printable ASCII characters
@@ -314,6 +317,24 @@ func isValidSNESHeader(info *SNESInfo, fileSize int64) bool {
 	}
 
 	return true
+}
+
+// isKnownHeaderBug checks if the ROM matches a known game with a header manufacturing defect.
+// These are original cartridge bugs, not ROM corruption.
+func isKnownHeaderBug(info *SNESInfo) bool {
+	// Contra III: The Alien Wars (USA)
+	// The title "CONTRA3 THE ALIEN WARS" is 22 chars but the header only has 21 bytes,
+	// causing the 'S' (0x53) to overflow into the map mode byte at 0x7FD5.
+	// The Japanese version has the correct header (0x20 = LoROM + SlowROM).
+	// Reference: https://datacrystal.tcrf.net/wiki/Contra_III:_The_Alien_Wars
+	if info.Title == "CONTRA3 THE ALIEN WAR" &&
+		info.MapMode == 0x53 && // 'S' from title overflow
+		info.Checksum == 0x0C3C &&
+		info.ComplementCheck == 0xF3C3 {
+		return true
+	}
+
+	return false
 }
 
 // extractSNESTitle extracts and cleans a SNES title string.
