@@ -26,6 +26,16 @@ import (
 //   - 0x70: SW Maker Name (16 bytes) - Publisher/Developer name
 //   - 0x80: Title (128 bytes) - Game title (space-padded)
 
+// Area represents Dreamcast area codes as a bitfield.
+// Multiple areas can be combined with bitwise OR.
+type Area uint8
+
+const (
+	AreaJapan        Area = 1 << 0 // J - Japan
+	AreaNorthAmerica Area = 1 << 1 // U - North America NTSC (USA, Canada)
+	AreaEurope       Area = 1 << 2 // E - Europe PAL
+)
+
 const (
 	magic      = "SEGA SEGAKATANA "
 	headerSize = 256
@@ -62,8 +72,8 @@ type DreamcastInfo struct {
 	MakerID string `json:"maker_id,omitempty"`
 	// DeviceInfo describes the disc format (e.g., "D018 GD-ROM1/1").
 	DeviceInfo string `json:"device_info,omitempty"`
-	// AreaSymbols contains region codes (J, U, E, etc.).
-	AreaSymbols string `json:"area_symbols,omitempty"`
+	// Area is a bitfield of supported areas.
+	Area Area `json:"area,omitempty"`
 	// Peripherals contains controller compatibility hex flags.
 	Peripherals string `json:"peripherals,omitempty"`
 	// Version is the disc version (e.g., "V1.005").
@@ -102,12 +112,15 @@ func parseDreamcastBytes(data []byte) (*DreamcastInfo, error) {
 	dateStr := util.ExtractASCII(data[dateOffset : dateOffset+dateSize])
 	releaseDate := util.ParseYYYYMMDD(dateStr)
 
+	// Parse area codes
+	area := parseAreaSymbols(data[areaOffset : areaOffset+areaSize])
+
 	info := &DreamcastInfo{
 		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
 		ProductNumber: util.ExtractASCII(data[productOffset : productOffset+productSize]),
 		MakerID:       util.ExtractASCII(data[makerOffset : makerOffset+makerSize]),
 		DeviceInfo:    util.ExtractASCII(data[deviceOffset : deviceOffset+deviceSize]),
-		AreaSymbols:   string(data[areaOffset : areaOffset+areaSize]), // Don't trim - positions matter
+		Area:          area,
 		Peripherals:   util.ExtractASCII(data[peripheralOffset : peripheralOffset+peripheralSize]),
 		Version:       util.ExtractASCII(data[versionOffset : versionOffset+versionSize]),
 		ReleaseDate:   releaseDate,
@@ -116,4 +129,21 @@ func parseDreamcastBytes(data []byte) (*DreamcastInfo, error) {
 	}
 
 	return info, nil
+}
+
+// parseAreaSymbols extracts area codes from the area symbols field.
+// Dreamcast uses ASCII characters: J (Japan), U (North America), E (Europe).
+func parseAreaSymbols(data []byte) Area {
+	var area Area
+	for _, b := range data {
+		switch b {
+		case 'J':
+			area |= AreaJapan
+		case 'U':
+			area |= AreaNorthAmerica
+		case 'E':
+			area |= AreaEurope
+		}
+	}
+	return area
 }
