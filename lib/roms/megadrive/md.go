@@ -164,7 +164,7 @@ func parseMDBytes(data []byte) (*MDInfo, error) {
 
 	// Extract all fields
 	copyright := util.ExtractASCII(data[mdCopyrightOffset : mdCopyrightOffset+mdCopyrightLen])
-	domesticTitle := util.ExtractASCII(data[mdDomesticTitleOff : mdDomesticTitleOff+mdDomesticTitleLen])
+	domesticTitle := util.ExtractShiftJIS(data[mdDomesticTitleOff : mdDomesticTitleOff+mdDomesticTitleLen])
 	overseasTitle := util.ExtractASCII(data[mdOverseasTitleOff : mdOverseasTitleOff+mdOverseasTitleLen])
 	serialNumber := util.ExtractASCII(data[mdSerialNumberOffset : mdSerialNumberOffset+mdSerialNumberLen])
 

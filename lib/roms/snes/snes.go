@@ -3,6 +3,8 @@ package snes
 import (
 	"fmt"
 	"io"
+
+	"github.com/sargunv/rom-tools/internal/util"
 )
 
 // SNES ROM format parsing.
@@ -199,7 +201,7 @@ func parseSNESHeader(r io.ReaderAt, offset int64, fileSize int64, hasCopierHeade
 	titleBytes := header[snesTitleOffset : snesTitleOffset+snesTitleLen]
 
 	// Extract title (ASCII, space-padded)
-	title := extractSNESTitle(titleBytes)
+	title := util.ExtractJISX0201(titleBytes)
 
 	// Map mode
 	mapMode := SNESMapMode(header[snesMapModeOffset])
@@ -244,9 +246,9 @@ func parseSNESHeader(r io.ReaderAt, offset int64, fileSize int64, hasCopierHeade
 		extHeader := make([]byte, 16)
 		if _, err := r.ReadAt(extHeader, extOffset); err == nil {
 			// Maker code (2 bytes at offset 0 = FFB0)
-			makerCode = extractSNESTitle(extHeader[0:2])
+			makerCode = util.ExtractJISX0201(extHeader[0:2])
 			// Game code (4 bytes at offset 2 = FFB2)
-			gameCode = extractSNESTitle(extHeader[2:6])
+			gameCode = util.ExtractJISX0201(extHeader[2:6])
 			// Expansion RAM size (byte at offset 13 = FFBD)
 			expRAMExp := extHeader[13]
 			if expRAMExp > 0 && expRAMExp < 16 {
@@ -335,24 +337,4 @@ func isKnownHeaderBug(info *SNESInfo) bool {
 	}
 
 	return false
-}
-
-// extractSNESTitle extracts and cleans a SNES title string.
-func extractSNESTitle(data []byte) string {
-	// Find end of valid ASCII characters
-	end := len(data)
-	for i, b := range data {
-		// SNES titles should be printable ASCII (0x20-0x7E) or space-padded
-		if b == 0 || b < 0x20 || b > 0x7E {
-			end = i
-			break
-		}
-	}
-
-	// Trim trailing spaces
-	for end > 0 && data[end-1] == ' ' {
-		end--
-	}
-
-	return string(data[:end])
 }
