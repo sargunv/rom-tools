@@ -24,6 +24,21 @@ import (
 //   - 0x50: Peripherals (16 bytes) - Controller compatibility codes
 //   - 0x60: Title (112 bytes) - Game title (space-padded)
 
+// Area represents Saturn area codes as a bitfield.
+// Multiple areas can be combined with bitwise OR.
+type Area uint8
+
+const (
+	AreaJapan        Area = 1 << 0 // J - Japan
+	AreaAsiaNTSC     Area = 1 << 1 // T - Asia NTSC (Taiwan, Philippines)
+	AreaNorthAmerica Area = 1 << 2 // U - North America NTSC (USA, Canada)
+	AreaBrazil       Area = 1 << 3 // B - Brazil
+	AreaKorea        Area = 1 << 4 // K - Korea
+	AreaAsiaPAL      Area = 1 << 5 // A - Asia PAL
+	AreaEurope       Area = 1 << 6 // E - Europe PAL
+	AreaLatinAmerica Area = 1 << 7 // L - Latin America
+)
+
 const (
 	magic      = "SEGA SEGASATURN "
 	headerSize = 256
@@ -61,8 +76,8 @@ type SaturnInfo struct {
 	ReleaseDate time.Time `json:"release_date,omitempty"`
 	// DeviceInfo describes the disc format (e.g., "CD-1/1").
 	DeviceInfo string `json:"device_info,omitempty"`
-	// AreaSymbols contains region codes (J, T, U, B, K, A, E, L).
-	AreaSymbols string `json:"area_symbols,omitempty"`
+	// Area is a bitfield of supported areas.
+	Area Area `json:"area,omitempty"`
 	// Peripherals contains controller compatibility codes.
 	Peripherals string `json:"peripherals,omitempty"`
 }
@@ -92,6 +107,9 @@ func parseSaturnBytes(data []byte) (*SaturnInfo, error) {
 	dateStr := util.ExtractASCII(data[dateOffset : dateOffset+dateSize])
 	releaseDate := util.ParseYYYYMMDD(dateStr)
 
+	// Parse area codes
+	area := parseAreaSymbols(data[areaOffset : areaOffset+areaSize])
+
 	info := &SaturnInfo{
 		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
 		MakerID:       util.ExtractASCII(data[makerOffset : makerOffset+makerSize]),
@@ -99,9 +117,37 @@ func parseSaturnBytes(data []byte) (*SaturnInfo, error) {
 		Version:       util.ExtractASCII(data[versionOffset : versionOffset+versionSize]),
 		ReleaseDate:   releaseDate,
 		DeviceInfo:    util.ExtractASCII(data[deviceOffset : deviceOffset+deviceSize]),
-		AreaSymbols:   string(data[areaOffset : areaOffset+areaSize]), // Don't trim - positions matter
+		Area:          area,
 		Peripherals:   util.ExtractASCII(data[peripheralOffset : peripheralOffset+peripheralSize]),
 	}
 
 	return info, nil
+}
+
+// parseAreaSymbols extracts area codes from the area symbols field.
+// Saturn uses ASCII characters: J (Japan), T (Asia NTSC), U (North America),
+// B (Brazil), K (Korea), A (Asia PAL), E (Europe), L (Latin America).
+func parseAreaSymbols(data []byte) Area {
+	var area Area
+	for _, b := range data {
+		switch b {
+		case 'J':
+			area |= AreaJapan
+		case 'T':
+			area |= AreaAsiaNTSC
+		case 'U':
+			area |= AreaNorthAmerica
+		case 'B':
+			area |= AreaBrazil
+		case 'K':
+			area |= AreaKorea
+		case 'A':
+			area |= AreaAsiaPAL
+		case 'E':
+			area |= AreaEurope
+		case 'L':
+			area |= AreaLatinAmerica
+		}
+	}
+	return area
 }

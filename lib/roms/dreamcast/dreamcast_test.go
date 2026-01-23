@@ -31,8 +31,8 @@ func TestParseDreamcast(t *testing.T) {
 	if info.DeviceInfo != "BCA4 GD-ROM1/1" {
 		t.Errorf("DeviceInfo = %q, want %q", info.DeviceInfo, "BCA4 GD-ROM1/1")
 	}
-	if info.AreaSymbols != "J       " {
-		t.Errorf("AreaSymbols = %q, want %q", info.AreaSymbols, "J       ")
+	if info.Area != AreaJapan {
+		t.Errorf("Area = %d, want %d (Japan)", info.Area, AreaJapan)
 	}
 	if info.Peripherals != "0799A10" {
 		t.Errorf("Peripherals = %q, want %q", info.Peripherals, "0799A10")
