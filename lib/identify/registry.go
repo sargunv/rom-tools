@@ -27,26 +27,36 @@ type formatEntry struct {
 	Identify   func(r io.ReaderAt, size int64) (GameInfo, error)
 }
 
+// wrapParser converts a typed parser function to the generic GameInfo signature.
+// This is needed because Go function types are invariant - a function returning
+// *GBAInfo is not assignable to a function returning GameInfo even though
+// *GBAInfo implements GameInfo.
+func wrapParser[T GameInfo](fn func(io.ReaderAt, int64) (T, error)) func(io.ReaderAt, int64) (GameInfo, error) {
+	return func(r io.ReaderAt, size int64) (GameInfo, error) {
+		return fn(r, size)
+	}
+}
+
 // registry contains all registered format entries.
 // Entries are ordered by specificity - more specific extensions first.
 // For ambiguous extensions like .iso, multiple formats are registered and
 // the detection logic tries each candidate in order.
 var registry = []formatEntry{
-	{FormatGBA, []string{".gba"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return gba.ParseGBA(r, size) }},
-	{FormatNDS, []string{".nds", ".dsi", ".ids"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return nds.ParseNDS(r, size) }},
-	{FormatNES, []string{".nes"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return nes.ParseNES(r, size) }},
-	{FormatSNES, []string{".sfc", ".smc"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return snes.ParseSNES(r, size) }},
-	{FormatGB, []string{".gb", ".gbc"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return gb.ParseGB(r, size) }},
-	{FormatZ64, []string{".z64"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return n64.ParseN64(r, size) }},
-	{FormatV64, []string{".v64"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return n64.ParseN64(r, size) }},
-	{FormatN64, []string{".n64"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return n64.ParseN64(r, size) }},
-	{FormatMD, []string{".32x", ".md", ".gen"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return megadrive.Parse(r, size) }},
-	{FormatSMD, []string{".smd"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return megadrive.Parse(r, size) }},
-	{FormatSMS, []string{".sms", ".gg"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return sms.ParseSMS(r, size) }},
-	{FormatXISO, []string{".xiso", ".iso"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return xbox.ParseXISO(r, size) }},
-	{FormatXBE, []string{".xbe"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return xbox.ParseXBE(r, size) }},
-	{FormatGCM, []string{".gcm", ".iso"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return gamecube.ParseGCM(r, size) }},
-	{FormatRVZ, []string{".rvz", ".wia"}, func(r io.ReaderAt, size int64) (GameInfo, error) { return gamecube.ParseRVZ(r, size) }},
+	{FormatGBA, []string{".gba"}, wrapParser(gba.ParseGBA)},
+	{FormatNDS, []string{".nds", ".dsi", ".ids"}, wrapParser(nds.ParseNDS)},
+	{FormatNES, []string{".nes"}, wrapParser(nes.ParseNES)},
+	{FormatSNES, []string{".sfc", ".smc"}, wrapParser(snes.ParseSNES)},
+	{FormatGB, []string{".gb", ".gbc"}, wrapParser(gb.ParseGB)},
+	{FormatZ64, []string{".z64"}, wrapParser(n64.ParseN64)},
+	{FormatV64, []string{".v64"}, wrapParser(n64.ParseN64)},
+	{FormatN64, []string{".n64"}, wrapParser(n64.ParseN64)},
+	{FormatMD, []string{".32x", ".md", ".gen"}, wrapParser(megadrive.Parse)},
+	{FormatSMD, []string{".smd"}, wrapParser(megadrive.Parse)},
+	{FormatSMS, []string{".sms", ".gg"}, wrapParser(sms.ParseSMS)},
+	{FormatXISO, []string{".xiso", ".iso"}, wrapParser(xbox.ParseXISO)},
+	{FormatXBE, []string{".xbe"}, wrapParser(xbox.ParseXBE)},
+	{FormatGCM, []string{".gcm", ".iso"}, wrapParser(gamecube.ParseGCM)},
+	{FormatRVZ, []string{".rvz", ".wia"}, wrapParser(gamecube.ParseRVZ)},
 	{FormatCHD, []string{".chd"}, identifyCHD},
 	{FormatZIP, []string{".zip"}, nil},
 	{FormatISO9660, []string{".iso", ".bin"}, identifyISO9660},
