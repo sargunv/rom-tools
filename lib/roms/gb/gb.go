@@ -54,6 +54,26 @@ const (
 	gbGlobalChecksumOffset = 0x14E
 )
 
+// isValidTitleByte checks if a byte is valid in a Game Boy title.
+// Valid bytes are null (padding) or printable ASCII (0x20-0x7E).
+func isValidTitleByte(b byte) bool {
+	return b == 0x00 || (b >= 0x20 && b <= 0x7E)
+}
+
+// isOldHeaderFormat checks if the header uses the old 16-byte title format.
+// Returns true if all 16 bytes in the title area are valid ASCII/null.
+// If any byte is outside the valid range (e.g., 0x80 or 0xC0 for CGB flags),
+// the header uses the new format with 11-byte title + manufacturer code + CGB flag.
+func isOldHeaderFormat(header []byte) bool {
+	titleStart := gbTitleOffset - gbHeaderStart
+	for i := 0; i < gbTitleMaxLen; i++ {
+		if !isValidTitleByte(header[titleStart+i]) {
+			return false
+		}
+	}
+	return true
+}
+
 // CGBFlag represents the Color Game Boy compatibility flag.
 type CGBFlag byte
 
@@ -113,9 +133,12 @@ const (
 
 // GBInfo contains metadata extracted from a GB/GBC ROM file.
 type GBInfo struct {
-	// Title is the game title (11-16 chars, space-padded).
+	// Title is the game title (11-16 chars, null-padded). For CGB games, this is
+	// truncated to 11 chars when a manufacturer code is present.
 	Title string
 	// ManufacturerCode is the 4-char code in newer cartridges (empty for older games).
+	// Note: Some CGB games use these bytes for title overflow instead of a manufacturer
+	// code. In such cases, the full title is split across Title and ManufacturerCode.
 	ManufacturerCode string
 	// CGBFlag is the Color Game Boy compatibility flag.
 	CGBFlag CGBFlag
@@ -152,34 +175,37 @@ func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
 		return nil, fmt.Errorf("failed to read GB header: %w", err)
 	}
 
-	// Extract CGB flag to determine title length
-	cgbFlagIdx := gbCGBFlagOffset - gbHeaderStart
-	cgbFlag := CGBFlag(header[cgbFlagIdx])
-
-	// Determine platform based on CGB flag
-	var platform core.Platform
-	if cgbFlag == CGBFlagSupported || cgbFlag == CGBFlagRequired {
-		platform = core.PlatformGBC
-	} else {
-		platform = core.PlatformGB
-	}
-
-	// Extract title - length depends on whether manufacturer code is present
+	// Detect header format by checking if the 16-byte title area contains valid ASCII.
+	// Old format: 16-byte title (all printable ASCII or null padding)
+	// New format: 11-byte title + 4-byte manufacturer code + 1-byte CGB flag
+	// If any byte in the 16-byte area is non-ASCII (e.g., 0x80 or 0xC0), it's new format.
 	titleStart := gbTitleOffset - gbHeaderStart
+	cgbFlagIdx := gbCGBFlagOffset - gbHeaderStart
+
 	var title string
 	var manufacturerCode string
+	var cgbFlag CGBFlag
+	var platform core.Platform
 
-	// Check if this might be a newer cartridge with manufacturer code
-	// Newer cartridges have title at 0x134-0x13E (11 chars) and manufacturer at 0x13F-0x142 (4 chars)
-	// We can detect this by checking if CGB flag is set (newer format)
-	if cgbFlag == CGBFlagSupported || cgbFlag == CGBFlagRequired {
-		// Newer format: 11-char title + 4-char manufacturer
+	if isOldHeaderFormat(header) {
+		// Old format: full 16-byte title, no manufacturer code, no CGB support
+		title = util.ExtractASCII(header[titleStart : titleStart+gbTitleMaxLen])
+		manufacturerCode = ""
+		cgbFlag = CGBFlagNone
+		platform = core.PlatformGB
+	} else {
+		// New format: 11-byte title + 4-byte manufacturer code + CGB flag
 		title = util.ExtractASCII(header[titleStart : titleStart+gbTitleNewLen])
 		mfgStart := gbManufacturerOffset - gbHeaderStart
 		manufacturerCode = util.ExtractASCII(header[mfgStart : mfgStart+gbManufacturerLen])
-	} else {
-		// Original format: 16-char title (but CGB flag byte overlaps, so effectively 15 max)
-		title = util.ExtractASCII(header[titleStart : titleStart+gbTitleMaxLen])
+		cgbFlag = CGBFlag(header[cgbFlagIdx])
+
+		// Determine platform based on CGB flag
+		if cgbFlag == CGBFlagSupported || cgbFlag == CGBFlagRequired {
+			platform = core.PlatformGBC
+		} else {
+			platform = core.PlatformGB
+		}
 	}
 
 	// Extract SGB flag
