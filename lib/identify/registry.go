@@ -11,7 +11,7 @@ import (
 type formatEntry struct {
 	Format     Format
 	Extensions []string
-	Identify   func(r io.ReaderAt, size int64) (*GameIdent, error)
+	Identify   func(r io.ReaderAt, size int64) (GameInfo, error)
 }
 
 // registry contains all registered format entries.

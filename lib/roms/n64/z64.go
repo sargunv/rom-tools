@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // N64 ROM format parsing (supports Z64, V64, and N64 byte orderings).
@@ -117,31 +118,40 @@ const (
 type N64Info struct {
 	// PIBSDConfig is the PI BSD DOM1 configuration flags (0x01-0x03, 24-bit).
 	// Controls ROM access timing for the Parallel Interface.
-	PIBSDConfig uint32
+	PIBSDConfig uint32 `json:"pi_bsd_config"`
 	// ClockRate is the clock rate override value (0x04-0x07).
 	// Used by libultra for timing calculations; 0 means use default.
-	ClockRate uint32
+	ClockRate uint32 `json:"clock_rate"`
 	// BootAddress is the program counter entry point in RDRAM (0x08-0x0B).
-	BootAddress uint32
+	BootAddress uint32 `json:"boot_address"`
 	// LibultraVersion is the SDK version used to build the ROM (0x0C-0x0F).
-	LibultraVersion uint32
+	LibultraVersion uint32 `json:"libultra_version"`
 	// CheckCode is the 64-bit integrity check value (0x10-0x17).
-	CheckCode uint64
+	CheckCode uint64 `json:"check_code"`
 	// Title is the game title (0x20-0x33, space-padded ASCII, up to 20 characters).
-	Title string
+	Title string `json:"title,omitempty"`
 	// GameCode is the full 4-character game code (0x3B-0x3E).
-	GameCode string
+	GameCode string `json:"game_code,omitempty"`
 	// CategoryCode is the media type: N=GamePak, D=64DD, C=Expandable, etc.
-	CategoryCode N64CategoryCode
+	CategoryCode N64CategoryCode `json:"category_code"`
 	// UniqueCode is the 2-char unique game identifier.
-	UniqueCode string
+	UniqueCode string `json:"unique_code,omitempty"`
 	// Destination is the target region: J=Japan, E=USA, P=Europe, etc.
-	Destination N64Destination
+	Destination N64Destination `json:"destination"`
 	// Version is the ROM version number (0x3F).
-	Version int
+	Version int `json:"version"`
 	// ByteOrder is the detected byte ordering of the ROM.
-	ByteOrder N64ByteOrder
+	ByteOrder N64ByteOrder `json:"byte_order"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *N64Info) GamePlatform() core.Platform { return core.PlatformN64 }
+
+// GameTitle implements identify.GameInfo.
+func (i *N64Info) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo.
+func (i *N64Info) GameSerial() string { return i.GameCode }
 
 // ParseN64 extracts game information from an N64 ROM file, auto-detecting byte order.
 func ParseN64(r io.ReaderAt, size int64) (*N64Info, error) {

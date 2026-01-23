@@ -18,16 +18,16 @@ func TestIdentifyZIPSlowMode(t *testing.T) {
 		t.Errorf("Expected type %s, got %s", ROMTypeZIP, rom.Type)
 	}
 
-	if rom.Ident == nil {
+	if rom.Info == nil {
 		t.Fatal("Expected game identification in slow mode, got nil")
 	}
 
-	if rom.Ident.Platform != core.PlatformGBA {
-		t.Errorf("Expected platform %s, got %s", core.PlatformGBA, rom.Ident.Platform)
+	if rom.Info.GamePlatform() != core.PlatformGBA {
+		t.Errorf("Expected platform %s, got %s", core.PlatformGBA, rom.Info.GamePlatform())
 	}
 
-	if rom.Ident.Title != "ROGUE" {
-		t.Errorf("Expected title 'ROGUE', got '%s'", rom.Ident.Title)
+	if rom.Info.GameTitle() != "ROGUE" {
+		t.Errorf("Expected title 'ROGUE', got '%s'", rom.Info.GameTitle())
 	}
 }
 
@@ -43,12 +43,12 @@ func TestIdentifyFolder(t *testing.T) {
 		t.Errorf("Expected type %s, got %s", ROMTypeFolder, rom.Type)
 	}
 
-	if rom.Ident == nil {
+	if rom.Info == nil {
 		t.Fatal("Expected game identification, got nil")
 	}
 
-	if rom.Ident.Platform != core.PlatformXbox {
-		t.Errorf("Expected platform %s, got %s", core.PlatformXbox, rom.Ident.Platform)
+	if rom.Info.GamePlatform() != core.PlatformXbox {
+		t.Errorf("Expected platform %s, got %s", core.PlatformXbox, rom.Info.GamePlatform())
 	}
 }
 

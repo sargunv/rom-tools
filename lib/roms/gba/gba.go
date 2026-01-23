@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // GBA (Game Boy Advance) ROM format parsing.
@@ -82,24 +83,33 @@ const (
 // GBAInfo contains metadata extracted from a GBA ROM file.
 type GBAInfo struct {
 	// Title is the game title (0xA0-0xAB, up to 12 uppercase ASCII characters).
-	Title string
+	Title string `json:"title,omitempty"`
 	// GameCode is the full 4-character game code (0xAC-0xAF).
-	GameCode string
+	GameCode string `json:"game_code,omitempty"`
 	// GameType is the cartridge/hardware type from byte 0 of GameCode.
-	GameType GBAGameType
+	GameType GBAGameType `json:"game_type"`
 	// Destination is the target region from byte 3 of GameCode.
-	Destination GBADestination
+	Destination GBADestination `json:"destination"`
 	// MakerCode is the 2-character manufacturer code (0xB0-0xB1).
-	MakerCode string
+	MakerCode string `json:"maker_code,omitempty"`
 	// MainUnitCode indicates the target hardware (0xB3, 0x00 for GBA).
-	MainUnitCode byte
+	MainUnitCode byte `json:"main_unit_code"`
 	// DeviceType indicates debug hardware (0xB4, bit 7 = debug DACS enabled).
-	DeviceType byte
+	DeviceType byte `json:"device_type"`
 	// Version is the software version number (0xBC).
-	Version int
+	Version int `json:"version"`
 	// HeaderChecksum is the complement check value (0xBD).
-	HeaderChecksum byte
+	HeaderChecksum byte `json:"header_checksum"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *GBAInfo) GamePlatform() core.Platform { return core.PlatformGBA }
+
+// GameTitle implements identify.GameInfo.
+func (i *GBAInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo.
+func (i *GBAInfo) GameSerial() string { return i.GameCode }
 
 // ParseGBA extracts game information from a GBA ROM file.
 func ParseGBA(r io.ReaderAt, size int64) (*GBAInfo, error) {

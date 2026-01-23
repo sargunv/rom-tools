@@ -51,14 +51,24 @@ const (
 
 // NDSInfo contains metadata extracted from an NDS ROM file.
 type NDSInfo struct {
-	Title      string
-	GameCode   string
-	MakerCode  string
-	RegionCode byte // 4th character of game code (J, E, P, etc.)
-	Version    int
-	UnitCode   NDSUnitCode
-	Platform   core.Platform
+	Title      string      `json:"title,omitempty"`
+	GameCode   string      `json:"game_code,omitempty"`
+	MakerCode  string      `json:"maker_code,omitempty"`
+	RegionCode byte        `json:"region_code"` // 4th character of game code (J, E, P, etc.)
+	Version    int         `json:"version"`
+	UnitCode   NDSUnitCode `json:"unit_code"`
+	// platform is DS or DSi based on unit code (internal, used by GamePlatform).
+	platform core.Platform
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *NDSInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo.
+func (i *NDSInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo.
+func (i *NDSInfo) GameSerial() string { return i.GameCode }
 
 // ParseNDS extracts game information from an NDS ROM file.
 func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
@@ -108,6 +118,6 @@ func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
 		RegionCode: regionCode,
 		Version:    version,
 		UnitCode:   unitCode,
-		Platform:   platform,
+		platform:   platform,
 	}, nil
 }

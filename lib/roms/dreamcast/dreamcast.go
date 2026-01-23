@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // Sega Dreamcast disc identification from ISO 9660 system area.
@@ -86,6 +87,15 @@ type DreamcastInfo struct {
 	// SWMakerName is the software maker/developer name.
 	SWMakerName string `json:"sw_maker_name,omitempty"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *DreamcastInfo) GamePlatform() core.Platform { return core.PlatformDreamcast }
+
+// GameTitle implements identify.GameInfo.
+func (i *DreamcastInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo.
+func (i *DreamcastInfo) GameSerial() string { return i.ProductNumber }
 
 // ParseDreamcast parses Dreamcast metadata from a reader.
 // The reader should contain the ISO 9660 system area data.

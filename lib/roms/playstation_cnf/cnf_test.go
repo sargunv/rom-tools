@@ -92,8 +92,8 @@ VER = 1.00`,
 			if err != nil {
 				t.Fatalf("Parse() error = %v", err)
 			}
-			if info.Platform != tt.wantPlatform {
-				t.Errorf("Platform = %v, want %v", info.Platform, tt.wantPlatform)
+			if info.GamePlatform() != tt.wantPlatform {
+				t.Errorf("Platform = %v, want %v", info.GamePlatform(), tt.wantPlatform)
 			}
 			if info.BootPath != tt.wantBootPath {
 				t.Errorf("BootPath = %q, want %q", info.BootPath, tt.wantBootPath)

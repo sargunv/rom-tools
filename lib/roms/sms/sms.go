@@ -80,18 +80,27 @@ const (
 // SMSInfo contains metadata extracted from a Master System or Game Gear ROM file.
 type SMSInfo struct {
 	// ProductCode is the BCD-decoded product code (e.g., "7670").
-	ProductCode string
+	ProductCode string `json:"product_code,omitempty"`
 	// Version is the version number (0-15).
-	Version int
+	Version int `json:"version"`
 	// Region is the region code indicating platform and region.
-	Region SMSRegion
+	Region SMSRegion `json:"region"`
 	// ROMSize is the ROM size code.
-	ROMSize SMSROMSize
+	ROMSize SMSROMSize `json:"rom_size"`
 	// Checksum is the ROM checksum (little-endian).
-	Checksum uint16
-	// Platform is the detected platform (SMS or Game Gear) based on region code.
-	Platform core.Platform
+	Checksum uint16 `json:"checksum"`
+	// platform is the detected platform (SMS or Game Gear) based on region code (internal, used by GamePlatform).
+	platform core.Platform
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *SMSInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo. SMS/GG ROMs don't have embedded titles.
+func (i *SMSInfo) GameTitle() string { return "" }
+
+// GameSerial implements identify.GameInfo.
+func (i *SMSInfo) GameSerial() string { return i.ProductCode }
 
 // ParseSMS extracts game information from a Master System or Game Gear ROM file.
 func ParseSMS(r io.ReaderAt, size int64) (*SMSInfo, error) {
@@ -138,7 +147,7 @@ func ParseSMS(r io.ReaderAt, size int64) (*SMSInfo, error) {
 		Region:      region,
 		ROMSize:     romSize,
 		Checksum:    checksum,
-		Platform:    platform,
+		platform:    platform,
 	}, nil
 }
 

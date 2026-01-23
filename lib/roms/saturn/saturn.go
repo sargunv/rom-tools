@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // Sega Saturn disc identification from ISO 9660 system area.
@@ -81,6 +82,15 @@ type SaturnInfo struct {
 	// Peripherals contains controller compatibility codes.
 	Peripherals string `json:"peripherals,omitempty"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *SaturnInfo) GamePlatform() core.Platform { return core.PlatformSaturn }
+
+// GameTitle implements identify.GameInfo.
+func (i *SaturnInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo.
+func (i *SaturnInfo) GameSerial() string { return i.ProductNumber }
 
 // ParseSaturn parses Saturn metadata from a reader.
 // The reader should contain the ISO 9660 system area data.

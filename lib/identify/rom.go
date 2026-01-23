@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/sargunv/rom-tools/internal/container/folder"
 	"github.com/sargunv/rom-tools/internal/container/zip"
@@ -41,7 +40,7 @@ func identifyContainer(c util.FileContainer, containerType ROMType, containerPat
 
 	files := make(Files)
 	detector := newDetector()
-	var romIdent *GameIdent
+	var romIdent GameInfo
 
 	for _, entry := range entries {
 		// Open file for identification
@@ -72,9 +71,9 @@ func identifyContainer(c util.FileContainer, containerType ROMType, containerPat
 
 		// Collect identification (error if multiple conflicting identifications found)
 		if fileIdent != nil {
-			if romIdent != nil && !reflect.DeepEqual(romIdent, fileIdent) {
+			if romIdent != nil && !gameInfoEqual(romIdent, fileIdent) {
 				reader.Close()
-				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.Serial, fileIdent.Serial)
+				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.GameSerial(), fileIdent.GameSerial())
 			}
 			romIdent = fileIdent
 		}
@@ -87,8 +86,15 @@ func identifyContainer(c util.FileContainer, containerType ROMType, containerPat
 		Path:  containerPath,
 		Type:  containerType,
 		Files: files,
-		Ident: romIdent,
+		Info:  romIdent,
 	}, nil
+}
+
+// gameInfoEqual compares two GameInfo values for equality based on their common fields.
+func gameInfoEqual(a, b GameInfo) bool {
+	return a.GamePlatform() == b.GamePlatform() &&
+		a.GameTitle() == b.GameTitle() &&
+		a.GameSerial() == b.GameSerial()
 }
 
 func identifyFolder(path string, opts Options) (*ROM, error) {
@@ -135,7 +141,7 @@ func identifyFile(path string, size int64, opts Options) (*ROM, error) {
 		Path:  path,
 		Type:  ROMTypeFile,
 		Files: files,
-		Ident: ident,
+		Info:  ident,
 	}, nil
 }
 
@@ -189,13 +195,13 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 		Path:  path,
 		Type:  ROMTypeZIP,
 		Files: files,
-		Ident: nil, // No identification in fast/default mode
+		Info:  nil, // No identification in fast/default mode
 	}, nil
 }
 
 // identifySingleReader identifies a file from a RandomAccessReader (works for any container).
 // Returns the ROMFile, game identification (if any), and an error.
-func identifySingleReader(r util.RandomAccessReader, name string, detector *detector, opts Options) (*ROMFile, *GameIdent, error) {
+func identifySingleReader(r util.RandomAccessReader, name string, detector *detector, opts Options) (*ROMFile, GameInfo, error) {
 	size := r.Size()
 
 	// Detect format and identify game using registry
@@ -245,7 +251,7 @@ func identifySingleReader(r util.RandomAccessReader, name string, detector *dete
 
 // identifyGameFromRegistry uses the format registry to detect format and identify game.
 // Returns the detected format and game identification (if any).
-func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string) (Format, *GameIdent) {
+func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string) (Format, GameInfo) {
 	// Get candidate formats by extension
 	entries := formatsByExtension(name)
 	if len(entries) == 0 {
@@ -279,7 +285,7 @@ func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string
 	return FormatUnknown, nil
 }
 
-func identifySingleFile(path string, size int64, detector *detector, opts Options) (*ROMFile, *GameIdent, error) {
+func identifySingleFile(path string, size int64, detector *detector, opts Options) (*ROMFile, GameInfo, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open file: %w", err)

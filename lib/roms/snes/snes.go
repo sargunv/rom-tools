@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // SNES ROM format parsing.
@@ -127,40 +128,49 @@ const (
 type SNESInfo struct {
 	// Extended header (FFB0-FFBF) - may not be present in older ROMs
 	// MakerCode is the 2-char maker code (FFB0), present when MakerCodeOld is 0x33.
-	MakerCode string
+	MakerCode string `json:"maker_code,omitempty"`
 	// GameCode is the 4-char game code (FFB2).
-	GameCode string
+	GameCode string `json:"game_code,omitempty"`
 	// ExpansionRAMSize is the expansion RAM size in bytes (FFBD).
-	ExpansionRAMSize int
+	ExpansionRAMSize int `json:"expansion_ram_size,omitempty"`
 	// SpecialVersion is the special version byte (FFBE).
-	SpecialVersion byte
+	SpecialVersion byte `json:"special_version,omitempty"`
 	// CartridgeSubType is the cartridge sub-type (FFBF).
-	CartridgeSubType byte
+	CartridgeSubType byte `json:"cartridge_sub_type,omitempty"`
 
 	// Standard header (FFC0-FFDF)
 	// Title is the game title (21 chars max, space-padded).
-	Title string
+	Title string `json:"title,omitempty"`
 	// MapMode is the memory mapping mode (FFD5).
-	MapMode SNESMapMode
+	MapMode SNESMapMode `json:"map_mode"`
 	// CartridgeType is the chipset info (FFD6).
-	CartridgeType SNESCartridgeType
+	CartridgeType SNESCartridgeType `json:"cartridge_type"`
 	// ROMSize is the ROM size in bytes (FFD7).
-	ROMSize int
+	ROMSize int `json:"rom_size"`
 	// RAMSize is the RAM/SRAM size in bytes (FFD8).
-	RAMSize int
+	RAMSize int `json:"ram_size"`
 	// Destination is the region code (FFD9).
-	Destination SNESDestination
+	Destination SNESDestination `json:"destination"`
 	// MakerCodeOld is the old maker code (FFDA) - 0x33 means use MakerCode.
-	MakerCodeOld byte
+	MakerCodeOld byte `json:"maker_code_old"`
 	// MaskROMVersion is the ROM version number (FFDB).
-	MaskROMVersion int
+	MaskROMVersion int `json:"mask_rom_version"`
 	// ComplementCheck is the checksum complement (FFDC).
-	ComplementCheck uint16
+	ComplementCheck uint16 `json:"complement_check"`
 	// Checksum is the ROM checksum (FFDE).
-	Checksum uint16
+	Checksum uint16 `json:"checksum"`
 	// HasCopierHeader is true if 512-byte copier header detected.
-	HasCopierHeader bool
+	HasCopierHeader bool `json:"has_copier_header"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *SNESInfo) GamePlatform() core.Platform { return core.PlatformSNES }
+
+// GameTitle implements identify.GameInfo.
+func (i *SNESInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo. SNES ROMs don't have a standard serial.
+func (i *SNESInfo) GameSerial() string { return "" }
 
 // ParseSNES extracts information from a SNES ROM file.
 func ParseSNES(r io.ReaderAt, size int64) (*SNESInfo, error) {

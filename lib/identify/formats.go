@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/sargunv/rom-tools/lib/chd"
-	"github.com/sargunv/rom-tools/lib/core"
 	"github.com/sargunv/rom-tools/lib/iso9660"
 	"github.com/sargunv/rom-tools/lib/roms/dreamcast"
 	"github.com/sargunv/rom-tools/lib/roms/gamecube"
@@ -25,176 +23,35 @@ import (
 	"github.com/sargunv/rom-tools/lib/roms/xbox"
 )
 
-// Helper functions to convert format info to GameIdent
-
-func xbeInfoToGameIdent(info *xbox.XBEInfo) *GameIdent {
-	return &GameIdent{
-		Platform: core.PlatformXbox,
-		Title:    info.Title,
-		Serial:   fmt.Sprintf("%s-%03d", info.PublisherCode, info.GameNumber),
-		Extra:    info,
-	}
-}
-
-func mdInfoToGameIdent(info *megadrive.MDInfo) *GameIdent {
-	// Use overseas title if available, otherwise domestic title
-	title := info.OverseasTitle
-	if title == "" {
-		title = info.DomesticTitle
-	}
-	return &GameIdent{
-		Platform: core.PlatformMD,
-		Title:    title,
-		Serial:   info.SerialNumber,
-		Extra:    info,
-	}
-}
-
-func gcmInfoToGameIdent(info *gamecube.GCMInfo, extra any) *GameIdent {
-	// Build the full game ID (DiscID + GameCode + RegionCode)
-	serial := fmt.Sprintf("%c%s%c", info.DiscID, info.GameCode, info.RegionCode)
-
-	// If no extra provided, use GCMInfo itself
-	if extra == nil {
-		extra = info
-	}
-
-	return &GameIdent{
-		Platform: info.Platform,
-		Title:    info.Title,
-		Serial:   serial,
-		Extra:    extra,
-	}
-}
-
-func n64InfoToGameIdent(info *n64.N64Info) *GameIdent {
-	return &GameIdent{
-		Platform: core.PlatformN64,
-		Title:    info.Title,
-		Serial:   info.GameCode,
-		Extra:    info,
-	}
-}
-
-func saturnInfoToGameIdent(info *saturn.SaturnInfo) *GameIdent {
-	return &GameIdent{
-		Platform: core.PlatformSaturn,
-		Title:    info.Title,
-		Serial:   info.ProductNumber,
-		Extra:    info,
-	}
-}
-
-func dreamcastInfoToGameIdent(info *dreamcast.DreamcastInfo) *GameIdent {
-	return &GameIdent{
-		Platform: core.PlatformDreamcast,
-		Title:    info.Title,
-		Serial:   info.ProductNumber,
-		Extra:    info,
-	}
-}
-
-func cnfInfoToGameIdent(info *playstation_cnf.CNFInfo) *GameIdent {
-	return &GameIdent{
-		Platform: info.Platform,
-		Serial:   info.DiscID,
-		Extra:    info,
-	}
-}
-
-func sfoInfoToGameIdent(info *playstation_sfo.SFOInfo) *GameIdent {
-	// Normalize disc ID: add hyphen after 4-char prefix if not present
-	normalizedID := info.DiscID
-	if !strings.Contains(normalizedID, "-") && len(normalizedID) > 4 {
-		normalizedID = normalizedID[:4] + "-" + normalizedID[4:]
-	}
-
-	return &GameIdent{
-		Platform: info.Platform,
-		Title:    info.Title,
-		Serial:   normalizedID,
-		Extra:    info,
-	}
-}
-
 // Simple parsers: GBA, GB, NES, NDS, SNES, SMS
 
-func identifyGBA(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := gba.ParseGBA(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: core.PlatformGBA,
-		Title:    info.Title,
-		Serial:   info.GameCode,
-		Extra:    info,
-	}, nil
+func identifyGBA(r io.ReaderAt, size int64) (GameInfo, error) {
+	return gba.ParseGBA(r, size)
 }
 
-func identifyGB(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := gb.ParseGB(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: info.Platform,
-		Title:    info.Title,
-		Extra:    info,
-	}, nil
+func identifyGB(r io.ReaderAt, size int64) (GameInfo, error) {
+	return gb.ParseGB(r, size)
 }
 
-func identifyNES(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := nes.ParseNES(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: core.PlatformNES,
-		Extra:    info,
-	}, nil
+func identifyNES(r io.ReaderAt, size int64) (GameInfo, error) {
+	return nes.ParseNES(r, size)
 }
 
-func identifyNDS(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := nds.ParseNDS(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: info.Platform,
-		Title:    info.Title,
-		Serial:   info.GameCode,
-		Extra:    info,
-	}, nil
+func identifyNDS(r io.ReaderAt, size int64) (GameInfo, error) {
+	return nds.ParseNDS(r, size)
 }
 
-func identifySNES(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := snes.ParseSNES(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: core.PlatformSNES,
-		Title:    info.Title,
-		Extra:    info,
-	}, nil
+func identifySNES(r io.ReaderAt, size int64) (GameInfo, error) {
+	return snes.ParseSNES(r, size)
 }
 
-func identifySMS(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := sms.ParseSMS(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return &GameIdent{
-		Platform: info.Platform,
-		Serial:   info.ProductCode,
-		Extra:    info,
-	}, nil
+func identifySMS(r io.ReaderAt, size int64) (GameInfo, error) {
+	return sms.ParseSMS(r, size)
 }
 
-// MD, GCM, XBE: use helper functions
+// MD, GCM, XBE
 
-func identifyMD(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyMD(r io.ReaderAt, size int64) (GameInfo, error) {
 	info, err := megadrive.Parse(r, size)
 	if err != nil {
 		return nil, err
@@ -202,28 +59,20 @@ func identifyMD(r io.ReaderAt, size int64) (*GameIdent, error) {
 	if info.SourceFormat != megadrive.FormatMD {
 		return nil, fmt.Errorf("format mismatch: expected MD, got SMD")
 	}
-	return mdInfoToGameIdent(info), nil
+	return info, nil
 }
 
-func identifyGCM(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := gamecube.ParseGCM(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return gcmInfoToGameIdent(info, nil), nil
+func identifyGCM(r io.ReaderAt, size int64) (GameInfo, error) {
+	return gamecube.ParseGCM(r, size)
 }
 
-func identifyXBE(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := xbox.ParseXBE(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return xbeInfoToGameIdent(info), nil
+func identifyXBE(r io.ReaderAt, size int64) (GameInfo, error) {
+	return xbox.ParseXBE(r, size)
 }
 
 // N64: unified ParseN64 handles all byte orderings
 
-func identifyZ64(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyZ64(r io.ReaderAt, size int64) (GameInfo, error) {
 	info, err := n64.ParseN64(r, size)
 	if err != nil {
 		return nil, err
@@ -231,10 +80,10 @@ func identifyZ64(r io.ReaderAt, size int64) (*GameIdent, error) {
 	if info.ByteOrder != n64.N64BigEndian {
 		return nil, fmt.Errorf("byte order mismatch: expected z64, got %s", info.ByteOrder)
 	}
-	return n64InfoToGameIdent(info), nil
+	return info, nil
 }
 
-func identifyV64(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyV64(r io.ReaderAt, size int64) (GameInfo, error) {
 	info, err := n64.ParseN64(r, size)
 	if err != nil {
 		return nil, err
@@ -242,10 +91,10 @@ func identifyV64(r io.ReaderAt, size int64) (*GameIdent, error) {
 	if info.ByteOrder != n64.N64ByteSwapped {
 		return nil, fmt.Errorf("byte order mismatch: expected v64, got %s", info.ByteOrder)
 	}
-	return n64InfoToGameIdent(info), nil
+	return info, nil
 }
 
-func identifyN64(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyN64(r io.ReaderAt, size int64) (GameInfo, error) {
 	info, err := n64.ParseN64(r, size)
 	if err != nil {
 		return nil, err
@@ -253,12 +102,12 @@ func identifyN64(r io.ReaderAt, size int64) (*GameIdent, error) {
 	if info.ByteOrder != n64.N64LittleEndian {
 		return nil, fmt.Errorf("byte order mismatch: expected n64, got %s", info.ByteOrder)
 	}
-	return n64InfoToGameIdent(info), nil
+	return info, nil
 }
 
 // Delegation: SMD->MD, RVZ->GCM, XISO->XBE, CHD->ISO9660
 
-func identifySMD(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifySMD(r io.ReaderAt, size int64) (GameInfo, error) {
 	info, err := megadrive.Parse(r, size)
 	if err != nil {
 		return nil, err
@@ -266,37 +115,18 @@ func identifySMD(r io.ReaderAt, size int64) (*GameIdent, error) {
 	if info.SourceFormat != megadrive.FormatSMD {
 		return nil, fmt.Errorf("format mismatch: expected SMD, got MD")
 	}
-	return mdInfoToGameIdent(info), nil
+	return info, nil
 }
 
-func identifyRVZ(r io.ReaderAt, size int64) (*GameIdent, error) {
-	rvzInfo, err := gamecube.ParseRVZ(r, size)
-	if err != nil {
-		return nil, err
-	}
-	gcmInfo, err := gamecube.ParseGCM(bytes.NewReader(rvzInfo.DiscHeader), int64(len(rvzInfo.DiscHeader)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse disc header from RVZ: %w", err)
-	}
-	extra := &struct {
-		GCMInfo *gamecube.GCMInfo
-		RVZInfo *gamecube.RVZInfo
-	}{
-		GCMInfo: gcmInfo,
-		RVZInfo: rvzInfo,
-	}
-	return gcmInfoToGameIdent(gcmInfo, extra), nil
+func identifyRVZ(r io.ReaderAt, size int64) (GameInfo, error) {
+	return gamecube.ParseRVZ(r, size)
 }
 
-func identifyXISO(r io.ReaderAt, size int64) (*GameIdent, error) {
-	info, err := xbox.ParseXISO(r, size)
-	if err != nil {
-		return nil, err
-	}
-	return xbeInfoToGameIdent(info), nil
+func identifyXISO(r io.ReaderAt, size int64) (GameInfo, error) {
+	return xbox.ParseXISO(r, size)
 }
 
-func identifyCHD(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyCHD(r io.ReaderAt, size int64) (GameInfo, error) {
 	reader, err := chd.NewReader(r, size)
 	if err != nil {
 		return nil, err
@@ -315,7 +145,7 @@ func identifyCHD(r io.ReaderAt, size int64) (*GameIdent, error) {
 
 // Dispatcher: ISO9660 (tries Saturn, Dreamcast, PlayStation, PSP)
 
-func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
+func identifyISO9660(r io.ReaderAt, size int64) (GameInfo, error) {
 	reader, err := iso9660.NewReader(r, size)
 	if err != nil {
 		return nil, err
@@ -325,10 +155,10 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 	systemArea := make([]byte, 2048)
 	if _, err := reader.ReadAt(systemArea, 0); err == nil {
 		if info, err := saturn.ParseSaturn(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
-			return saturnInfoToGameIdent(info), nil
+			return info, nil
 		}
 		if info, err := dreamcast.ParseDreamcast(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
-			return dreamcastInfoToGameIdent(info), nil
+			return info, nil
 		}
 	}
 
@@ -337,7 +167,7 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 		data := make([]byte, fileSize)
 		if _, err := fileReader.ReadAt(data, 0); err == nil {
 			if info, err := playstation_cnf.Parse(bytes.NewReader(data), fileSize); err == nil {
-				return cnfInfoToGameIdent(info), nil
+				return info, nil
 			}
 		}
 	}
@@ -347,7 +177,7 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 		data := make([]byte, fileSize)
 		if _, err := fileReader.ReadAt(data, 0); err == nil {
 			if info, err := playstation_sfo.Parse(bytes.NewReader(data), fileSize); err == nil {
-				return sfoInfoToGameIdent(info), nil
+				return info, nil
 			}
 		}
 	}
