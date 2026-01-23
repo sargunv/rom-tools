@@ -26,7 +26,7 @@ func TestParseNDS(t *testing.T) {
 		t.Fatalf("ParseNDS() error = %v", err)
 	}
 
-	if info.Platform != core.PlatformNDS {
-		t.Errorf("Expected platform %s, got %s", core.PlatformNDS, info.Platform)
+	if info.GamePlatform() != core.PlatformNDS {
+		t.Errorf("Expected platform %s, got %s", core.PlatformNDS, info.GamePlatform())
 	}
 }

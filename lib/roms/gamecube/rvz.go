@@ -1,10 +1,13 @@
 package gamecube
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
+
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // RVZ/WIA (Dolphin compressed disc image) format parsing.
@@ -84,29 +87,38 @@ const (
 
 // RVZInfo contains metadata extracted from an RVZ/WIA file header.
 type RVZInfo struct {
+	// GCM contains the game identification info parsed from the disc header.
+	GCM *GCMInfo `json:"gcm,omitempty"`
 	// Version is the WIA format version.
-	Version uint32
+	Version uint32 `json:"version"`
 	// CompatibleVersion is the minimum compatible version.
-	CompatibleVersion uint32
+	CompatibleVersion uint32 `json:"compatible_version"`
 	// DiscType indicates the disc type (GameCube or Wii).
-	DiscType DiscType
+	DiscType DiscType `json:"disc_type"`
 	// Compression is the compression method.
-	Compression Compression
+	Compression Compression `json:"compression"`
 	// CompressionLevel is the compression level (signed for Zstandard).
-	CompressionLevel int32
+	CompressionLevel int32 `json:"compression_level"`
 	// ChunkSize is the chunk size for compressed data.
-	ChunkSize uint32
+	ChunkSize uint32 `json:"chunk_size"`
 	// ISOFileSize is the original uncompressed disc size.
-	ISOFileSize uint64
+	ISOFileSize uint64 `json:"iso_file_size"`
 	// WIAFileSize is the compressed file size.
-	WIAFileSize uint64
+	WIAFileSize uint64 `json:"wia_file_size"`
 	// DiscHash is the SHA-1 hash of disc struct (hex).
-	DiscHash string
+	DiscHash string `json:"disc_hash,omitempty"`
 	// FileHeadHash is the SHA-1 hash of file header (hex).
-	FileHeadHash string
-	// DiscHeader contains the first 128 bytes of disc (uncompressed).
-	DiscHeader []byte
+	FileHeadHash string `json:"file_head_hash,omitempty"`
 }
+
+// GamePlatform implements identify.GameInfo by delegating to GCM.
+func (i *RVZInfo) GamePlatform() core.Platform { return i.GCM.GamePlatform() }
+
+// GameTitle implements identify.GameInfo by delegating to GCM.
+func (i *RVZInfo) GameTitle() string { return i.GCM.GameTitle() }
+
+// GameSerial implements identify.GameInfo by delegating to GCM.
+func (i *RVZInfo) GameSerial() string { return i.GCM.GameSerial() }
 
 // ParseRVZ reads and parses an RVZ/WIA file header.
 func ParseRVZ(r io.ReaderAt, size int64) (*RVZInfo, error) {
@@ -147,7 +159,14 @@ func ParseRVZ(r io.ReaderAt, size int64) (*RVZInfo, error) {
 		return nil, fmt.Errorf("RVZ disc header too small: %d bytes (need %d)", len(dhead), discHeaderSize)
 	}
 
+	// Parse the embedded GCM header
+	gcmInfo, err := ParseGCM(bytes.NewReader(dhead), int64(len(dhead)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse disc header from RVZ: %w", err)
+	}
+
 	return &RVZInfo{
+		GCM:               gcmInfo,
 		Version:           version,
 		CompatibleVersion: compatVer,
 		DiscType:          discType,
@@ -158,6 +177,5 @@ func ParseRVZ(r io.ReaderAt, size int64) (*RVZInfo, error) {
 		WIAFileSize:       wiaFileSize,
 		DiscHash:          discHash,
 		FileHeadHash:      fileHeadHash,
-		DiscHeader:        dhead,
 	}, nil
 }

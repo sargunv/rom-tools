@@ -31,7 +31,7 @@ import (
 const (
 	discHeaderSize = 0x60 // We only need first 96 bytes for identification
 
-	discIDOffset = 0x000
+	discIDOffset      = 0x000
 	gameCodeOffset    = 0x001
 	gameCodeLen       = 2
 	regionCodeOffset  = 0x003
@@ -51,21 +51,32 @@ const (
 // GCMInfo contains metadata extracted from a GameCube/Wii disc header.
 type GCMInfo struct {
 	// DiscID is the console identifier (G=GameCube, R/S=Wii, D=GC Demo).
-	DiscID byte
+	DiscID byte `json:"disc_id"`
 	// GameCode is the 2-character unique game identifier.
-	GameCode string
+	GameCode string `json:"game_code,omitempty"`
 	// RegionCode is the region code (E=USA, P=PAL, J=Japan, etc.).
-	RegionCode byte
+	RegionCode byte `json:"region_code"`
 	// MakerCode is the 2-character publisher identifier.
-	MakerCode string
+	MakerCode string `json:"maker_code,omitempty"`
 	// DiscNumber is the disc number for multi-disc games.
-	DiscNumber int
+	DiscNumber int `json:"disc_number"`
 	// Version is the disc version/revision.
-	Version int
+	Version int `json:"version"`
 	// Title is the game title.
-	Title string
-	// Platform is the target platform (GameCube or Wii).
-	Platform core.Platform
+	Title string `json:"title,omitempty"`
+	// platform is the target platform (GameCube or Wii) (internal, used by GamePlatform).
+	platform core.Platform
+}
+
+// GamePlatform implements identify.GameInfo.
+func (i *GCMInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo.
+func (i *GCMInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo. Returns the full game ID (DiscID + GameCode + RegionCode).
+func (i *GCMInfo) GameSerial() string {
+	return fmt.Sprintf("%c%s%c", i.DiscID, i.GameCode, i.RegionCode)
 }
 
 // ParseGCM parses a GameCube/Wii disc header from a reader.
@@ -120,6 +131,6 @@ func parseGCMBytes(header []byte) (*GCMInfo, error) {
 		DiscNumber: discNumber,
 		Version:    version,
 		Title:      title,
-		Platform:   platform,
+		platform:   platform,
 	}, nil
 }

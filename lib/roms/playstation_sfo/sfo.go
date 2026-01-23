@@ -41,28 +41,44 @@ type sfoData map[string]any
 
 // SFOInfo contains metadata extracted from an SFO file with platform detection.
 type SFOInfo struct {
-	// Platform is PSP, PS3, Vita, or PS4, determined from DISC_ID prefix.
-	Platform core.Platform `json:",omitempty"`
 	// DiscID is the game identifier (e.g., "ULUS10041", "BLUS30001").
-	DiscID string `json:",omitempty"`
+	DiscID string `json:"disc_id,omitempty"`
 	// Title is the game title from the SFO.
-	Title string `json:",omitempty"`
+	Title string `json:"title,omitempty"`
 	// Category is the content category (e.g., "UG" for UMD game).
-	Category string `json:",omitempty"`
+	Category string `json:"category,omitempty"`
 	// Version is the disc media version (DISC_VERSION).
-	Version string `json:",omitempty"`
+	Version string `json:"version,omitempty"`
 	// AppVersion is the application/patch version (APP_VER).
-	AppVersion string `json:",omitempty"`
+	AppVersion string `json:"app_version,omitempty"`
 	// DiscNumber is the disc number for multi-disc games (DISC_NUMBER, 1-indexed).
-	DiscNumber int `json:",omitempty"`
+	DiscNumber int `json:"disc_number,omitempty"`
 	// DiscTotal is the total number of discs for multi-disc games (DISC_TOTAL).
-	DiscTotal int `json:",omitempty"`
+	DiscTotal int `json:"disc_total,omitempty"`
 	// ParentalLevel is the content rating level (PARENTAL_LEVEL).
-	ParentalLevel int `json:",omitempty"`
+	ParentalLevel int `json:"parental_level,omitempty"`
 	// SystemVersion is the required system version (PSP_SYSTEM_VER or PS3_SYSTEM_VER).
-	SystemVersion string `json:",omitempty"`
+	SystemVersion string `json:"system_version,omitempty"`
 	// Region is the geographic region code (REGION).
-	Region int `json:",omitempty"`
+	Region int `json:"region,omitempty"`
+	// platform is PSP, PS3, Vita, or PS4, determined from DISC_ID prefix (internal, used by GamePlatform).
+	platform core.Platform
+}
+
+// GamePlatform implements identify.GameInfo.
+func (i *SFOInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo.
+func (i *SFOInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo. Returns disc ID with hyphen normalization.
+func (i *SFOInfo) GameSerial() string {
+	// Normalize disc ID: add hyphen after 4-char prefix if not present
+	normalizedID := i.DiscID
+	if !strings.Contains(normalizedID, "-") && len(normalizedID) > 4 {
+		normalizedID = normalizedID[:4] + "-" + normalizedID[4:]
+	}
+	return normalizedID
 }
 
 // Parse reads an SFO file and returns high-level game information.
@@ -90,7 +106,7 @@ func Parse(r io.ReaderAt, size int64) (*SFOInfo, error) {
 	}
 
 	return &SFOInfo{
-		Platform:      platform,
+		platform:      platform,
 		DiscID:        discID,
 		Title:         getString(data, "TITLE"),
 		Category:      getString(data, "CATEGORY"),

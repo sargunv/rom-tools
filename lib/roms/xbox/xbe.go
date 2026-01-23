@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"unicode/utf16"
+
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // XBE (Xbox Executable) format parsing.
@@ -83,29 +85,40 @@ const (
 // XBEInfo contains metadata extracted from an Xbox XBE file.
 type XBEInfo struct {
 	// TitleID is the numeric title ID.
-	TitleID uint32
+	TitleID uint32 `json:"title_id"`
 	// TitleIDHex is the title ID as an 8-character hex string.
-	TitleIDHex string
+	TitleIDHex string `json:"title_id_hex,omitempty"`
 	// PublisherCode is the 2-character publisher code from title ID.
-	PublisherCode string
+	PublisherCode string `json:"publisher_code,omitempty"`
 	// GameNumber is the game number from title ID.
-	GameNumber uint16
+	GameNumber uint16 `json:"game_number"`
 	// Title is the game title.
-	Title string
+	Title string `json:"title,omitempty"`
 	// Timestamp is the certificate timestamp (seconds since 2000-01-01).
-	Timestamp uint32
+	Timestamp uint32 `json:"timestamp"`
 	// AlternateTitleIDs contains alternate title IDs for region variants.
-	AlternateTitleIDs []uint32
+	AlternateTitleIDs []uint32 `json:"alternate_title_ids,omitempty"`
 	// AllowedMediaTypes is a bitmask of allowed media types.
-	AllowedMediaTypes XboxMediaType
+	AllowedMediaTypes XboxMediaType `json:"allowed_media_types"`
 	// RegionFlags is the bitmask of XboxRegion values.
-	RegionFlags XboxRegion
+	RegionFlags XboxRegion `json:"region_flags"`
 	// GameRatings contains game rating flags.
-	GameRatings uint32
+	GameRatings uint32 `json:"game_ratings"`
 	// DiscNumber is the disc number for multi-disc games.
-	DiscNumber uint32
+	DiscNumber uint32 `json:"disc_number"`
 	// Version is the game version.
-	Version uint32
+	Version uint32 `json:"version"`
+}
+
+// GamePlatform implements identify.GameInfo.
+func (i *XBEInfo) GamePlatform() core.Platform { return core.PlatformXbox }
+
+// GameTitle implements identify.GameInfo.
+func (i *XBEInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo. Returns serial in "XX-###" format.
+func (i *XBEInfo) GameSerial() string {
+	return fmt.Sprintf("%s-%03d", i.PublisherCode, i.GameNumber)
 }
 
 // ParseXBE extracts game information from an XBE file.

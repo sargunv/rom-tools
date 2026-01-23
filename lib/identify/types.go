@@ -3,12 +3,13 @@ package identify
 
 import "github.com/sargunv/rom-tools/lib/core"
 
-// GameIdent represents platform-specific identification data extracted from a ROM.
-type GameIdent struct {
-	Platform core.Platform `json:"platform"`
-	Title    string        `json:"title,omitempty"`
-	Serial   string        `json:"serial,omitempty"`
-	Extra    any           `json:"extra,omitempty"`
+// GameInfo is implemented by all platform-specific ROM info structs.
+// It provides common identification fields while allowing type assertion
+// for platform-specific details.
+type GameInfo interface {
+	GamePlatform() core.Platform
+	GameTitle() string  // May be empty if format doesn't have title
+	GameSerial() string // May be empty if format doesn't have serial
 }
 
 // ROMType indicates how the ROM is packaged.
@@ -38,14 +39,12 @@ const (
 	FormatGB      Format = "gb"
 	FormatMD      Format = "md"
 	FormatSMD     Format = "smd"
-	Format32X     Format = "32x"
 	FormatNDS     Format = "nds"
 	FormatNES     Format = "nes"
 	FormatSNES    Format = "snes"
 	FormatGCM     Format = "gcm"
 	FormatRVZ     Format = "rvz"
 	FormatSMS     Format = "sms"
-	FormatGG      Format = "gg"
 )
 
 // HashAlgorithm identifies a hash algorithm.
@@ -87,10 +86,10 @@ type Files map[string]ROMFile
 
 // ROM represents a complete game unit (single file, zip, or folder).
 type ROM struct {
-	Path  string     `json:"path"`
-	Type  ROMType    `json:"type"`
-	Files Files      `json:"files"`
-	Ident *GameIdent `json:"ident,omitempty"`
+	Path  string   `json:"path"`
+	Type  ROMType  `json:"type"`
+	Files Files    `json:"files"`
+	Info  GameInfo `json:"info,omitempty"`
 }
 
 // HashMode controls how hashes are calculated.

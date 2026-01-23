@@ -27,8 +27,8 @@ func TestParseGB_GB(t *testing.T) {
 	}
 
 	// Platform detection
-	if info.Platform != core.PlatformGB {
-		t.Errorf("Expected platform %s, got %s", core.PlatformGB, info.Platform)
+	if info.GamePlatform() != core.PlatformGB {
+		t.Errorf("Expected platform %s, got %s", core.PlatformGB, info.GamePlatform())
 	}
 
 	// Title
@@ -112,8 +112,8 @@ func TestParseGB_GBC(t *testing.T) {
 	}
 
 	// Platform detection
-	if info.Platform != core.PlatformGBC {
-		t.Errorf("Expected platform %s, got %s", core.PlatformGBC, info.Platform)
+	if info.GamePlatform() != core.PlatformGBC {
+		t.Errorf("Expected platform %s, got %s", core.PlatformGBC, info.GamePlatform())
 	}
 
 	// Title (11 chars for GBC format)

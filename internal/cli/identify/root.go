@@ -155,18 +155,14 @@ func outputTextSingle(rom *romident.ROM) {
 	}
 
 	// Identification
-	if rom.Ident != nil {
+	if rom.Info != nil {
 		fmt.Println(format.HeaderStyle.Render("Identification:"))
-		fmt.Printf("  Platform: %s\n", rom.Ident.Platform)
-		if rom.Ident.Title != "" {
-			fmt.Printf("  Title: %s\n", rom.Ident.Title)
+		fmt.Printf("  Platform: %s\n", rom.Info.GamePlatform())
+		if rom.Info.GameTitle() != "" {
+			fmt.Printf("  Title: %s\n", rom.Info.GameTitle())
 		}
-		if rom.Ident.Serial != "" {
-			fmt.Printf("  Serial: %s\n", rom.Ident.Serial)
-		}
-		if rom.Ident.Extra != nil {
-			extraJSON, _ := json.Marshal(rom.Ident.Extra)
-			fmt.Printf("  Extra: %s\n", string(extraJSON))
+		if rom.Info.GameSerial() != "" {
+			fmt.Printf("  Serial: %s\n", rom.Info.GameSerial())
 		}
 	}
 }

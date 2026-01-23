@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // NES ROM format parsing (iNES and NES 2.0).
@@ -131,55 +133,64 @@ const (
 // Designed for NES 2.0 headers; iNES 1.0 headers populate a subset of fields.
 type NESInfo struct {
 	// PRGROMSize is the PRG-ROM size in bytes.
-	PRGROMSize int
+	PRGROMSize int `json:"prg_rom_size"`
 	// CHRROMSize is the CHR-ROM size in bytes. Zero indicates CHR-RAM.
-	CHRROMSize int
+	CHRROMSize int `json:"chr_rom_size"`
 
 	// PRGRAMSize is the volatile PRG-RAM size in bytes.
-	PRGRAMSize int
+	PRGRAMSize int `json:"prg_ram_size"`
 	// PRGNVRAMSize is the non-volatile (battery-backed) PRG-RAM size in bytes.
-	PRGNVRAMSize int
+	PRGNVRAMSize int `json:"prg_nvram_size"`
 	// CHRRAMSize is the volatile CHR-RAM size in bytes.
-	CHRRAMSize int
+	CHRRAMSize int `json:"chr_ram_size"`
 	// CHRNVRAMSize is the non-volatile CHR-RAM size in bytes.
-	CHRNVRAMSize int
+	CHRNVRAMSize int `json:"chr_nvram_size"`
 
 	// Mapper is the mapper number (0-4095 for NES 2.0, 0-255 for iNES 1.0).
-	Mapper int
+	Mapper int `json:"mapper"`
 	// Submapper disambiguates mapper variants (NES 2.0 only, 0-15).
-	Submapper int
+	Submapper int `json:"submapper"`
 
 	// Mirroring indicates the nametable mirroring mode.
-	Mirroring NESMirroring
+	Mirroring NESMirroring `json:"mirroring"`
 	// FourScreen indicates four-screen VRAM layout (overrides Mirroring).
-	FourScreen bool
+	FourScreen bool `json:"four_screen"`
 
 	// HasBattery indicates battery-backed save RAM is present.
-	HasBattery bool
+	HasBattery bool `json:"has_battery"`
 	// HasTrainer indicates a 512-byte trainer is present before PRG-ROM.
-	HasTrainer bool
+	HasTrainer bool `json:"has_trainer"`
 
 	// ConsoleType indicates the target console.
-	ConsoleType NESConsoleType
+	ConsoleType NESConsoleType `json:"console_type"`
 	// TimingMode indicates the CPU/PPU timing region.
-	TimingMode NESTimingMode
+	TimingMode NESTimingMode `json:"timing_mode"`
 	// ExpansionDevice is the default expansion device (NES 2.0 only, raw byte).
-	ExpansionDevice byte
+	ExpansionDevice byte `json:"expansion_device"`
 
 	// VsPPUType indicates the Vs. System PPU variant (only valid when ConsoleType == NESConsoleVsSystem).
-	VsPPUType NESVsPPUType
+	VsPPUType NESVsPPUType `json:"vs_ppu_type"`
 	// VsHardwareType indicates the Vs. System hardware configuration (only valid when ConsoleType == NESConsoleVsSystem).
-	VsHardwareType NESVsHardwareType
+	VsHardwareType NESVsHardwareType `json:"vs_hardware_type"`
 
 	// ExtendedConsoleType indicates the extended console variant (only valid when ConsoleType == NESConsoleExtended).
-	ExtendedConsoleType NESExtendedConsoleType
+	ExtendedConsoleType NESExtendedConsoleType `json:"extended_console_type"`
 
 	// MiscROMs indicates the number of miscellaneous ROM chips (NES 2.0 only).
-	MiscROMs int
+	MiscROMs int `json:"misc_roms"`
 
 	// IsNES20 is true if the header is NES 2.0 format.
-	IsNES20 bool
+	IsNES20 bool `json:"is_nes20"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *NESInfo) GamePlatform() core.Platform { return core.PlatformNES }
+
+// GameTitle implements identify.GameInfo. NES ROMs don't have embedded titles.
+func (i *NESInfo) GameTitle() string { return "" }
+
+// GameSerial implements identify.GameInfo. NES ROMs don't have serial numbers.
+func (i *NESInfo) GameSerial() string { return "" }
 
 // ParseNES extracts information from an NES ROM file (iNES or NES 2.0 format).
 func ParseNES(r io.ReaderAt, size int64) (*NESInfo, error) {

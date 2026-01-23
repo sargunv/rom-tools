@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // Sega CD / Mega CD disc identification from ISO 9660 system area.
@@ -74,6 +75,20 @@ type SegaCDInfo struct {
 	// Region is a bitfield of supported regions.
 	Region Region `json:"region,omitempty"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *SegaCDInfo) GamePlatform() core.Platform { return core.PlatformSegaCD }
+
+// GameTitle implements identify.GameInfo. Returns overseas title if available, otherwise domestic.
+func (i *SegaCDInfo) GameTitle() string {
+	if i.OverseasTitle != "" {
+		return i.OverseasTitle
+	}
+	return i.DomesticTitle
+}
+
+// GameSerial implements identify.GameInfo.
+func (i *SegaCDInfo) GameSerial() string { return i.SerialNumber }
 
 // ParseSegaCD parses Sega CD metadata from a reader.
 // The reader should contain the ISO 9660 system area data.

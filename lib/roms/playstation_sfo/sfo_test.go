@@ -110,11 +110,21 @@ func makeTestSFO(entries map[string]any) []byte {
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name     string
-		entries  map[string]any
-		want     *SFOInfo
-		wantErr  bool
-		errMatch string
+		name         string
+		entries      map[string]any
+		wantPlatform core.Platform
+		wantDiscID   string
+		wantTitle    string
+		wantCategory string
+		wantVersion  string
+		wantAppVer   string
+		wantDiscNum  int
+		wantDiscTot  int
+		wantParental int
+		wantSysVer   string
+		wantRegion   int
+		wantErr      bool
+		errMatch     string
 	}{
 		{
 			name: "PSP UMD game",
@@ -127,16 +137,14 @@ func TestParse(t *testing.T) {
 				"PARENTAL_LEVEL": uint32(3),
 				"REGION":         uint32(32768),
 			},
-			want: &SFOInfo{
-				Platform:      core.PlatformPSP,
-				DiscID:        "ULUS10041",
-				Title:         "Test PSP Game",
-				Category:      "UG",
-				Version:       "1.00",
-				SystemVersion: "3.00",
-				ParentalLevel: 3,
-				Region:        32768,
-			},
+			wantPlatform: core.PlatformPSP,
+			wantDiscID:   "ULUS10041",
+			wantTitle:    "Test PSP Game",
+			wantCategory: "UG",
+			wantVersion:  "1.00",
+			wantSysVer:   "3.00",
+			wantParental: 3,
+			wantRegion:   32768,
 		},
 		{
 			name: "PS3 Blu-ray game",
@@ -149,16 +157,14 @@ func TestParse(t *testing.T) {
 				"PS3_SYSTEM_VER": "02.00",
 				"PARENTAL_LEVEL": uint32(5),
 			},
-			want: &SFOInfo{
-				Platform:      core.PlatformPS3,
-				DiscID:        "BLUS30001",
-				Title:         "Test PS3 Game",
-				Category:      "DG",
-				Version:       "01.00",
-				AppVersion:    "01.00",
-				SystemVersion: "02.00",
-				ParentalLevel: 5,
-			},
+			wantPlatform: core.PlatformPS3,
+			wantDiscID:   "BLUS30001",
+			wantTitle:    "Test PS3 Game",
+			wantCategory: "DG",
+			wantVersion:  "01.00",
+			wantAppVer:   "01.00",
+			wantSysVer:   "02.00",
+			wantParental: 5,
 		},
 		{
 			name: "PS3 with TITLE_ID fallback",
@@ -167,12 +173,10 @@ func TestParse(t *testing.T) {
 				"TITLE":    "Test PS3 Digital",
 				"CATEGORY": "HG",
 			},
-			want: &SFOInfo{
-				Platform: core.PlatformPS3,
-				DiscID:   "NPUB30001",
-				Title:    "Test PS3 Digital",
-				Category: "HG",
-			},
+			wantPlatform: core.PlatformPS3,
+			wantDiscID:   "NPUB30001",
+			wantTitle:    "Test PS3 Digital",
+			wantCategory: "HG",
 		},
 		{
 			name: "PS Vita game",
@@ -181,12 +185,10 @@ func TestParse(t *testing.T) {
 				"TITLE":    "Test Vita Game",
 				"CATEGORY": "gd",
 			},
-			want: &SFOInfo{
-				Platform: core.PlatformPSVita,
-				DiscID:   "PCSA00001",
-				Title:    "Test Vita Game",
-				Category: "gd",
-			},
+			wantPlatform: core.PlatformPSVita,
+			wantDiscID:   "PCSA00001",
+			wantTitle:    "Test Vita Game",
+			wantCategory: "gd",
 		},
 		{
 			name: "PS4 game",
@@ -199,16 +201,14 @@ func TestParse(t *testing.T) {
 				"DISC_TOTAL":     uint32(2),
 				"PARENTAL_LEVEL": uint32(7),
 			},
-			want: &SFOInfo{
-				Platform:      core.PlatformPS4,
-				DiscID:        "CUSA00001",
-				Title:         "Test PS4 Game",
-				Category:      "gd",
-				AppVersion:    "01.00",
-				DiscNumber:    1,
-				DiscTotal:     2,
-				ParentalLevel: 7,
-			},
+			wantPlatform: core.PlatformPS4,
+			wantDiscID:   "CUSA00001",
+			wantTitle:    "Test PS4 Game",
+			wantCategory: "gd",
+			wantAppVer:   "01.00",
+			wantDiscNum:  1,
+			wantDiscTot:  2,
+			wantParental: 7,
 		},
 		{
 			name: "multi-disc game",
@@ -219,14 +219,12 @@ func TestParse(t *testing.T) {
 				"DISC_NUMBER": uint32(2),
 				"DISC_TOTAL":  uint32(3),
 			},
-			want: &SFOInfo{
-				Platform:   core.PlatformPS3,
-				DiscID:     "BLUS30002",
-				Title:      "Multi-Disc Game",
-				Category:   "DG",
-				DiscNumber: 2,
-				DiscTotal:  3,
-			},
+			wantPlatform: core.PlatformPS3,
+			wantDiscID:   "BLUS30002",
+			wantTitle:    "Multi-Disc Game",
+			wantCategory: "DG",
+			wantDiscNum:  2,
+			wantDiscTot:  3,
 		},
 		{
 			name:     "missing DISC_ID and TITLE_ID",
@@ -252,38 +250,38 @@ func TestParse(t *testing.T) {
 				t.Fatalf("Parse() error = %v", err)
 			}
 
-			if info.Platform != tt.want.Platform {
-				t.Errorf("Platform = %v, want %v", info.Platform, tt.want.Platform)
+			if info.GamePlatform() != tt.wantPlatform {
+				t.Errorf("Platform = %v, want %v", info.GamePlatform(), tt.wantPlatform)
 			}
-			if info.DiscID != tt.want.DiscID {
-				t.Errorf("DiscID = %q, want %q", info.DiscID, tt.want.DiscID)
+			if info.DiscID != tt.wantDiscID {
+				t.Errorf("DiscID = %q, want %q", info.DiscID, tt.wantDiscID)
 			}
-			if info.Title != tt.want.Title {
-				t.Errorf("Title = %q, want %q", info.Title, tt.want.Title)
+			if info.Title != tt.wantTitle {
+				t.Errorf("Title = %q, want %q", info.Title, tt.wantTitle)
 			}
-			if info.Category != tt.want.Category {
-				t.Errorf("Category = %q, want %q", info.Category, tt.want.Category)
+			if info.Category != tt.wantCategory {
+				t.Errorf("Category = %q, want %q", info.Category, tt.wantCategory)
 			}
-			if info.Version != tt.want.Version {
-				t.Errorf("Version = %q, want %q", info.Version, tt.want.Version)
+			if info.Version != tt.wantVersion {
+				t.Errorf("Version = %q, want %q", info.Version, tt.wantVersion)
 			}
-			if info.AppVersion != tt.want.AppVersion {
-				t.Errorf("AppVersion = %q, want %q", info.AppVersion, tt.want.AppVersion)
+			if info.AppVersion != tt.wantAppVer {
+				t.Errorf("AppVersion = %q, want %q", info.AppVersion, tt.wantAppVer)
 			}
-			if info.DiscNumber != tt.want.DiscNumber {
-				t.Errorf("DiscNumber = %d, want %d", info.DiscNumber, tt.want.DiscNumber)
+			if info.DiscNumber != tt.wantDiscNum {
+				t.Errorf("DiscNumber = %d, want %d", info.DiscNumber, tt.wantDiscNum)
 			}
-			if info.DiscTotal != tt.want.DiscTotal {
-				t.Errorf("DiscTotal = %d, want %d", info.DiscTotal, tt.want.DiscTotal)
+			if info.DiscTotal != tt.wantDiscTot {
+				t.Errorf("DiscTotal = %d, want %d", info.DiscTotal, tt.wantDiscTot)
 			}
-			if info.ParentalLevel != tt.want.ParentalLevel {
-				t.Errorf("ParentalLevel = %d, want %d", info.ParentalLevel, tt.want.ParentalLevel)
+			if info.ParentalLevel != tt.wantParental {
+				t.Errorf("ParentalLevel = %d, want %d", info.ParentalLevel, tt.wantParental)
 			}
-			if info.SystemVersion != tt.want.SystemVersion {
-				t.Errorf("SystemVersion = %q, want %q", info.SystemVersion, tt.want.SystemVersion)
+			if info.SystemVersion != tt.wantSysVer {
+				t.Errorf("SystemVersion = %q, want %q", info.SystemVersion, tt.wantSysVer)
 			}
-			if info.Region != tt.want.Region {
-				t.Errorf("Region = %d, want %d", info.Region, tt.want.Region)
+			if info.Region != tt.wantRegion {
+				t.Errorf("Region = %d, want %d", info.Region, tt.wantRegion)
 			}
 		})
 	}

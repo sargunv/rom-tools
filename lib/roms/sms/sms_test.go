@@ -46,8 +46,8 @@ func TestParseSMS_MasterSystem(t *testing.T) {
 		t.Fatalf("ParseSMS() error = %v", err)
 	}
 
-	if info.Platform != core.PlatformMS {
-		t.Errorf("Platform = %v, want %v", info.Platform, core.PlatformMS)
+	if info.GamePlatform() != core.PlatformMS {
+		t.Errorf("Platform = %v, want %v", info.GamePlatform(), core.PlatformMS)
 	}
 	if info.Region != SMSRegionExportSMS {
 		t.Errorf("Region = %v, want %v", info.Region, SMSRegionExportSMS)
@@ -71,8 +71,8 @@ func TestParseSMS_GameGear(t *testing.T) {
 		t.Fatalf("ParseSMS() error = %v", err)
 	}
 
-	if info.Platform != core.PlatformGameGear {
-		t.Errorf("Platform = %v, want %v", info.Platform, core.PlatformGameGear)
+	if info.GamePlatform() != core.PlatformGameGear {
+		t.Errorf("Platform = %v, want %v", info.GamePlatform(), core.PlatformGameGear)
 	}
 	if info.Region != SMSRegionIntlGG {
 		t.Errorf("Region = %v, want %v", info.Region, SMSRegionIntlGG)

@@ -135,34 +135,43 @@ const (
 type GBInfo struct {
 	// Title is the game title (11-16 chars, null-padded). For CGB games, this is
 	// truncated to 11 chars when a manufacturer code is present.
-	Title string
+	Title string `json:"title,omitempty"`
 	// ManufacturerCode is the 4-char code in newer cartridges (empty for older games).
 	// Note: Some CGB games use these bytes for title overflow instead of a manufacturer
 	// code. In such cases, the full title is split across Title and ManufacturerCode.
-	ManufacturerCode string
+	ManufacturerCode string `json:"manufacturer_code,omitempty"`
 	// CGBFlag is the Color Game Boy compatibility flag.
-	CGBFlag CGBFlag
+	CGBFlag CGBFlag `json:"cgb_flag"`
 	// SGBFlag is the Super Game Boy compatibility flag.
-	SGBFlag SGBFlag
+	SGBFlag SGBFlag `json:"sgb_flag"`
 	// CartridgeType is the MBC type and features code.
-	CartridgeType byte
+	CartridgeType byte `json:"cartridge_type"`
 	// ROMSize is the ROM size code.
-	ROMSize ROMSize
+	ROMSize ROMSize `json:"rom_size"`
 	// RAMSize is the external RAM size code.
-	RAMSize RAMSize
+	RAMSize RAMSize `json:"ram_size"`
 	// Destination indicates the target region.
-	Destination Destination
+	Destination Destination `json:"destination"`
 	// LicenseeCode is the publisher identifier (old or new format).
-	LicenseeCode string
+	LicenseeCode string `json:"licensee_code,omitempty"`
 	// Version is the ROM version number.
-	Version int
+	Version int `json:"version"`
 	// HeaderChecksum is the header checksum byte (0x14D).
-	HeaderChecksum byte
+	HeaderChecksum byte `json:"header_checksum"`
 	// GlobalChecksum is the 16-bit global checksum (0x14E-0x14F, big-endian).
-	GlobalChecksum uint16
-	// Platform is GB or GBC based on the CGB flag.
-	Platform core.Platform
+	GlobalChecksum uint16 `json:"global_checksum"`
+	// platform is GB or GBC based on the CGB flag (internal, used by GamePlatform).
+	platform core.Platform
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *GBInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo.
+func (i *GBInfo) GameTitle() string { return i.Title }
+
+// GameSerial implements identify.GameInfo. GB ROMs don't have serial numbers.
+func (i *GBInfo) GameSerial() string { return "" }
 
 // ParseGB extracts game information from a GB/GBC ROM file.
 func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
@@ -254,6 +263,6 @@ func ParseGB(r io.ReaderAt, size int64) (*GBInfo, error) {
 		Version:          version,
 		HeaderChecksum:   headerChecksum,
 		GlobalChecksum:   globalChecksum,
-		Platform:         platform,
+		platform:         platform,
 	}, nil
 }

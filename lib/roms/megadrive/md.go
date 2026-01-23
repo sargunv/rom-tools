@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sargunv/rom-tools/internal/util"
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // Mega Drive (Genesis) ROM format parsing.
@@ -106,42 +107,61 @@ const (
 // MDInfo contains metadata extracted from a Mega Drive/Genesis ROM file.
 type MDInfo struct {
 	// SourceFormat indicates whether the ROM was in MD or SMD format.
-	SourceFormat Format
+	SourceFormat Format `json:"source_format"`
 	// SystemType identifies the console (e.g., "SEGA MEGA DRIVE", "SEGA GENESIS").
-	SystemType string
+	SystemType string `json:"system_type,omitempty"`
 	// Copyright contains copyright and release date info.
-	Copyright string
+	Copyright string `json:"copyright,omitempty"`
 	// DomesticTitle is the Japanese title.
-	DomesticTitle string
+	DomesticTitle string `json:"domestic_title,omitempty"`
 	// OverseasTitle is the international title.
-	OverseasTitle string
+	OverseasTitle string `json:"overseas_title,omitempty"`
 	// SerialNumber is the product code (e.g., "GM XXXXXXXX-XX").
-	SerialNumber string
+	SerialNumber string `json:"serial_number,omitempty"`
 	// Checksum is the ROM checksum (big-endian).
-	Checksum uint16
+	Checksum uint16 `json:"checksum"`
 	// Devices contains supported input devices.
-	Devices []Device
+	Devices []Device `json:"devices,omitempty"`
 	// Region is a bitfield of supported regions.
 	// Note: Some games have incorrect region codes in their headers.
 	// For example, Shadow Squadron (USA, Europe) has only "E" in its header.
 	// See: https://misterfpga.org/viewtopic.php?t=4569&start=30
-	Region Region
+	Region Region `json:"region"`
 	// ROMStart is the start address of ROM (typically 0x000000).
-	ROMStart uint32
+	ROMStart uint32 `json:"rom_start"`
 	// ROMEnd is the end address of ROM.
-	ROMEnd uint32
+	ROMEnd uint32 `json:"rom_end"`
 	// RAMStart is the start address of RAM (typically 0xFF0000).
-	RAMStart uint32
+	RAMStart uint32 `json:"ram_start"`
 	// RAMEnd is the end address of RAM (typically 0xFFFFFF).
-	RAMEnd uint32
+	RAMEnd uint32 `json:"ram_end"`
 	// SRAMInfo contains backup memory information (if present).
-	SRAMInfo string
+	SRAMInfo string `json:"sram_info,omitempty"`
 	// ModemInfo contains modem/network support information (rarely used).
-	ModemInfo string
+	ModemInfo string `json:"modem_info,omitempty"`
 	// Is32X indicates whether this ROM is for the Sega 32X add-on.
 	// Detected by presence of "MARS" at offset 0x3C0.
-	Is32X bool
+	Is32X bool `json:"is_32x,omitempty"`
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *MDInfo) GamePlatform() core.Platform {
+	if i.Is32X {
+		return core.Platform32X
+	}
+	return core.PlatformMD
+}
+
+// GameTitle implements identify.GameInfo. Returns overseas title if available, otherwise domestic.
+func (i *MDInfo) GameTitle() string {
+	if i.OverseasTitle != "" {
+		return i.OverseasTitle
+	}
+	return i.DomesticTitle
+}
+
+// GameSerial implements identify.GameInfo.
+func (i *MDInfo) GameSerial() string { return i.SerialNumber }
 
 // Parse extracts game information from a Mega Drive ROM file.
 // It automatically detects and handles both native MD and SMD formats.

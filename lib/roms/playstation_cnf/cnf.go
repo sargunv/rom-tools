@@ -43,17 +43,26 @@ const (
 
 // CNFInfo contains metadata extracted from a PlayStation SYSTEM.CNF file.
 type CNFInfo struct {
-	// Platform is PS1 or PS2, determined by the boot line type.
-	Platform core.Platform `json:",omitempty"`
 	// BootPath is the raw boot path from BOOT/BOOT2 line (e.g., "cdrom0:\SLUS_123.45;1").
-	BootPath string `json:",omitempty"`
+	BootPath string `json:"boot_path,omitempty"`
 	// DiscID is the game identifier extracted from the boot path (e.g., "SLUS_123.45").
-	DiscID string `json:",omitempty"`
+	DiscID string `json:"disc_id,omitempty"`
 	// Version is the disc version from VER line (PS2 only).
-	Version string `json:",omitempty"`
+	Version string `json:"version,omitempty"`
 	// VideoMode is NTSC or PAL (PS2 only).
-	VideoMode VideoMode `json:",omitempty"`
+	VideoMode VideoMode `json:"video_mode,omitempty"`
+	// platform is PS1 or PS2, determined by the boot line type (internal, used by GamePlatform).
+	platform core.Platform
 }
+
+// GamePlatform implements identify.GameInfo.
+func (i *CNFInfo) GamePlatform() core.Platform { return i.platform }
+
+// GameTitle implements identify.GameInfo. CNF files don't contain titles.
+func (i *CNFInfo) GameTitle() string { return "" }
+
+// GameSerial implements identify.GameInfo.
+func (i *CNFInfo) GameSerial() string { return i.DiscID }
 
 // Parse parses PlayStation SYSTEM.CNF content from a reader.
 func Parse(r io.ReaderAt, size int64) (*CNFInfo, error) {
@@ -84,12 +93,12 @@ func parseCNFBytes(data []byte) (*CNFInfo, error) {
 		switch key {
 		case "BOOT2":
 			// PS2 disc
-			info.Platform = core.PlatformPS2
+			info.platform = core.PlatformPS2
 			info.BootPath = value
 		case "BOOT":
 			// PS1 disc (only use if BOOT2 not found)
-			if info.Platform != core.PlatformPS2 {
-				info.Platform = core.PlatformPS1
+			if info.platform != core.PlatformPS2 {
+				info.platform = core.PlatformPS1
 				info.BootPath = value
 			}
 		case "VER":
