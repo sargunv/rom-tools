@@ -4,10 +4,13 @@
 // cooked (.iso) and raw (.bin) CD images by detecting the sector format
 // (MODE1/2048, MODE1/2352, MODE2/2352).
 //
+// The API mirrors archive/zip: use NewReader to open an ISO, then access
+// files via OpenFile or read raw sectors via ReadAt.
+//
 // ISO 9660 layout (relevant parts):
+//   - Sectors 0-15: System area (platform-specific, e.g., Saturn/Dreamcast headers)
 //   - Sector 16 (offset 0x8000): Primary Volume Descriptor
 //   - PVD offset 156: Root directory record (34 bytes)
-//   - Root directory record contains extent location and size
 package iso9660
 
 import (
@@ -29,17 +32,18 @@ const (
 	flagDirectory = 0x02 // Directory flag in file flags byte
 )
 
-// Image represents an ISO 9660 image.
-type Image struct {
+// Reader provides access to an ISO 9660 filesystem image.
+// It implements io.ReaderAt for raw sector access.
+type Reader struct {
 	r             io.ReaderAt
 	size          int64
 	rootExtentLoc uint32
 	rootExtentLen uint32
 }
 
-// Open opens an ISO 9660 image and validates the primary volume descriptor.
+// NewReader opens an ISO 9660 image and validates the primary volume descriptor.
 // Automatically detects the sector format (cooked or raw).
-func Open(r io.ReaderAt, size int64) (*Image, error) {
+func NewReader(r io.ReaderAt, size int64) (*Reader, error) {
 	// Try each sector format to find the ISO9660 PVD
 	for _, format := range sectorFormats {
 		// Check if file is large enough for this format
@@ -80,7 +84,7 @@ func Open(r io.ReaderAt, size int64) (*Image, error) {
 		rootExtentLoc := binary.LittleEndian.Uint32(rootRecord[dirEntryExtentLoc:])
 		rootExtentLen := binary.LittleEndian.Uint32(rootRecord[dirEntryDataLen:])
 
-		return &Image{
+		return &Reader{
 			r:             reader,
 			size:          logicalSize,
 			rootExtentLoc: rootExtentLoc,
@@ -91,71 +95,65 @@ func Open(r io.ReaderAt, size int64) (*Image, error) {
 	return nil, fmt.Errorf("not a valid ISO 9660: no CD001 magic found")
 }
 
-// ReadSystemArea reads the ISO 9660 system area (sectors 0-15).
-// This area is reserved for system use and may contain platform-specific headers.
-func (img *Image) ReadSystemArea() ([]byte, error) {
-	// System area is sectors 0-15 (16 sectors * 2048 bytes = 32KB)
-	// We only need the first sector for Saturn identification
-	if img.size < sectorSize2048 {
-		return nil, fmt.Errorf("file too small for system area")
-	}
-
-	data := make([]byte, sectorSize2048)
-	if _, err := img.r.ReadAt(data, 0); err != nil {
-		return nil, fmt.Errorf("failed to read system area: %w", err)
-	}
-	return data, nil
+// ReadAt implements io.ReaderAt, reading from the logical (2048-byte sector) view.
+// This allows direct access to any part of the ISO, including the system area
+// at offset 0 (used for Saturn/Dreamcast identification).
+func (r *Reader) ReadAt(p []byte, off int64) (n int, err error) {
+	return r.r.ReadAt(p, off)
 }
 
-// ReadFile reads a file by path (case-insensitive).
+// Size returns the logical size of the ISO image in bytes.
+func (r *Reader) Size() int64 {
+	return r.size
+}
+
+// OpenFile opens a file by path (case-insensitive) and returns a reader for its contents.
 // Supports subdirectory paths like "PSP_GAME/PARAM.SFO".
 // Handles ISO 9660 version suffixes (e.g., ";1").
-func (img *Image) ReadFile(path string) ([]byte, error) {
+func (r *Reader) OpenFile(path string) (io.ReaderAt, int64, error) {
 	// Split path into components
 	parts := strings.Split(path, "/")
 
 	// Start from root directory
-	dirExtentLoc := img.rootExtentLoc
-	dirExtentLen := img.rootExtentLen
+	dirExtentLoc := r.rootExtentLoc
+	dirExtentLen := r.rootExtentLen
 
 	// Traverse directories
 	for i, part := range parts {
 		isLast := i == len(parts)-1
 
-		extentLoc, extentLen, isDir, err := img.findEntry(dirExtentLoc, dirExtentLen, part)
+		extentLoc, extentLen, isDir, err := r.findEntry(dirExtentLoc, dirExtentLen, part)
 		if err != nil {
-			return nil, fmt.Errorf("path component %q not found: %w", part, err)
+			return nil, 0, fmt.Errorf("path component %q not found: %w", part, err)
 		}
 
 		if isLast {
-			// Final component - read the file
+			// Final component - return a reader for the file
 			if isDir {
-				return nil, fmt.Errorf("%q is a directory, not a file", part)
+				return nil, 0, fmt.Errorf("%q is a directory, not a file", part)
 			}
-			data := make([]byte, extentLen)
-			if _, err := img.r.ReadAt(data, int64(extentLoc)*sectorSize2048); err != nil {
-				return nil, fmt.Errorf("failed to read file: %w", err)
-			}
-			return data, nil
+			fileOffset := int64(extentLoc) * sectorSize2048
+			fileSize := int64(extentLen)
+			return io.NewSectionReader(r.r, fileOffset, fileSize), fileSize, nil
 		}
 
 		// Intermediate component - must be a directory
 		if !isDir {
-			return nil, fmt.Errorf("%q is not a directory", part)
+			return nil, 0, fmt.Errorf("%q is not a directory", part)
 		}
 		dirExtentLoc = extentLoc
 		dirExtentLen = extentLen
 	}
 
-	return nil, fmt.Errorf("empty path")
+	return nil, 0, fmt.Errorf("empty path")
 }
 
 // findEntry searches a directory for an entry by name.
 // Returns the entry's extent location, size, whether it's a directory, and any error.
-func (img *Image) findEntry(dirExtentLoc, dirExtentLen uint32, name string) (uint32, uint32, bool, error) {
+func (r *Reader) findEntry(dirExtentLoc, dirExtentLen uint32, name string) (uint32, uint32, bool, error) {
 	// Read directory
 	dirData := make([]byte, dirExtentLen)
-	if _, err := img.r.ReadAt(dirData, int64(dirExtentLoc)*sectorSize2048); err != nil {
+	if _, err := r.r.ReadAt(dirData, int64(dirExtentLoc)*sectorSize2048); err != nil {
 		return 0, 0, false, fmt.Errorf("failed to read directory: %w", err)
 	}
 

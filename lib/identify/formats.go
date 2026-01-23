@@ -8,11 +8,11 @@ import (
 
 	"github.com/sargunv/rom-tools/lib/chd"
 	"github.com/sargunv/rom-tools/lib/core"
+	"github.com/sargunv/rom-tools/lib/iso9660"
 	"github.com/sargunv/rom-tools/lib/roms/dreamcast"
 	"github.com/sargunv/rom-tools/lib/roms/gamecube"
 	"github.com/sargunv/rom-tools/lib/roms/gb"
 	"github.com/sargunv/rom-tools/lib/roms/gba"
-	"github.com/sargunv/rom-tools/lib/roms/iso9660"
 	"github.com/sargunv/rom-tools/lib/roms/megadrive"
 	"github.com/sargunv/rom-tools/lib/roms/n64"
 	"github.com/sargunv/rom-tools/lib/roms/nds"
@@ -316,32 +316,39 @@ func identifyCHD(r io.ReaderAt, size int64) (*GameIdent, error) {
 // Dispatcher: ISO9660 (tries Saturn, Dreamcast, PlayStation, PSP)
 
 func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
-	img, err := iso9660.Open(r, size)
+	reader, err := iso9660.NewReader(r, size)
 	if err != nil {
 		return nil, err
 	}
 
-	// Try to read system area (sectors 0-15) for Saturn/Dreamcast identification
-	if data, err := img.ReadSystemArea(); err == nil {
-		if info, err := saturn.ParseSaturn(bytes.NewReader(data), int64(len(data))); err == nil {
+	// Try to read system area (sector 0) for Saturn/Dreamcast identification
+	systemArea := make([]byte, 2048)
+	if _, err := reader.ReadAt(systemArea, 0); err == nil {
+		if info, err := saturn.ParseSaturn(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
 			return saturnInfoToGameIdent(info), nil
 		}
-		if info, err := dreamcast.ParseDreamcast(bytes.NewReader(data), int64(len(data))); err == nil {
+		if info, err := dreamcast.ParseDreamcast(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
 			return dreamcastInfoToGameIdent(info), nil
 		}
 	}
 
 	// Try to read SYSTEM.CNF (PS1/PS2 discs)
-	if data, err := img.ReadFile("SYSTEM.CNF"); err == nil {
-		if info, err := playstation_cnf.Parse(bytes.NewReader(data), int64(len(data))); err == nil {
-			return cnfInfoToGameIdent(info), nil
+	if fileReader, fileSize, err := reader.OpenFile("SYSTEM.CNF"); err == nil {
+		data := make([]byte, fileSize)
+		if _, err := fileReader.ReadAt(data, 0); err == nil {
+			if info, err := playstation_cnf.Parse(bytes.NewReader(data), fileSize); err == nil {
+				return cnfInfoToGameIdent(info), nil
+			}
 		}
 	}
 
 	// Try to read PSP_GAME/PARAM.SFO (PSP/PS3/Vita/PS4 discs)
-	if data, err := img.ReadFile("PSP_GAME/PARAM.SFO"); err == nil {
-		if info, err := playstation_sfo.Parse(bytes.NewReader(data), int64(len(data))); err == nil {
-			return sfoInfoToGameIdent(info), nil
+	if fileReader, fileSize, err := reader.OpenFile("PSP_GAME/PARAM.SFO"); err == nil {
+		data := make([]byte, fileSize)
+		if _, err := fileReader.ReadAt(data, 0); err == nil {
+			if info, err := playstation_sfo.Parse(bytes.NewReader(data), fileSize); err == nil {
+				return sfoInfoToGameIdent(info), nil
+			}
 		}
 	}
 
