@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/sargunv/rom-tools/internal/container/folder"
 	"github.com/sargunv/rom-tools/internal/container/zip"
@@ -71,7 +72,7 @@ func identifyContainer(c util.FileContainer, containerType ROMType, containerPat
 
 		// Collect identification (error if multiple conflicting identifications found)
 		if fileIdent != nil {
-			if romIdent != nil && !gameInfoEqual(romIdent, fileIdent) {
+			if romIdent != nil && !reflect.DeepEqual(romIdent, fileIdent) {
 				reader.Close()
 				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.GameSerial(), fileIdent.GameSerial())
 			}
@@ -88,13 +89,6 @@ func identifyContainer(c util.FileContainer, containerType ROMType, containerPat
 		Files: files,
 		Info:  romIdent,
 	}, nil
-}
-
-// gameInfoEqual compares two GameInfo values for equality based on their common fields.
-func gameInfoEqual(a, b GameInfo) bool {
-	return a.GamePlatform() == b.GamePlatform() &&
-		a.GameTitle() == b.GameTitle() &&
-		a.GameSerial() == b.GameSerial()
 }
 
 func identifyFolder(path string, opts Options) (*ROM, error) {
