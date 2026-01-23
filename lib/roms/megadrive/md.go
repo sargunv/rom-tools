@@ -91,6 +91,16 @@ const (
 	mdModemLen           = 12
 	mdRegionOffset       = 0x1F0
 	mdRegionLen          = 16
+
+	// 32X-specific constants
+	// The 32X MARS header at offset 0x3C0 identifies 32X ROMs.
+	// It typically starts with "MARS" (e.g., "MARS CHECK MODE").
+	md32XHeaderOffset = 0x3C0
+	md32XMagicLen     = 4
+	md32XMagic        = "MARS"
+
+	// Minimum size needed for full parsing including 32X detection
+	mdMinParseSize = md32XHeaderOffset + md32XMagicLen // 0x3C4
 )
 
 // MDInfo contains metadata extracted from a Mega Drive/Genesis ROM file.
@@ -112,6 +122,9 @@ type MDInfo struct {
 	// Devices contains supported input devices.
 	Devices []Device
 	// Region is a bitfield of supported regions.
+	// Note: Some games have incorrect region codes in their headers.
+	// For example, Shadow Squadron (USA, Europe) has only "E" in its header.
+	// See: https://misterfpga.org/viewtopic.php?t=4569&start=30
 	Region Region
 	// ROMStart is the start address of ROM (typically 0x000000).
 	ROMStart uint32
@@ -125,6 +138,9 @@ type MDInfo struct {
 	SRAMInfo string
 	// ModemInfo contains modem/network support information (rarely used).
 	ModemInfo string
+	// Is32X indicates whether this ROM is for the Sega 32X add-on.
+	// Detected by presence of "MARS" at offset 0x3C0.
+	Is32X bool
 }
 
 // Parse extracts game information from a Mega Drive ROM file.
@@ -142,7 +158,14 @@ func parseMD(r io.ReaderAt, size int64) (*MDInfo, error) {
 		return nil, fmt.Errorf("file too small for Mega Drive header: %d bytes", size)
 	}
 
-	data := make([]byte, mdHeaderStart+mdHeaderSize)
+	// Read enough for header + 32X detection (0x3C4 bytes)
+	// If file is smaller, read what we can (32X detection will be skipped)
+	readSize := int64(mdMinParseSize)
+	if size < readSize {
+		readSize = size
+	}
+
+	data := make([]byte, readSize)
 	if _, err := r.ReadAt(data, 0); err != nil {
 		return nil, fmt.Errorf("failed to read Mega Drive ROM: %w", err)
 	}
@@ -193,6 +216,16 @@ func parseMDBytes(data []byte) (*MDInfo, error) {
 	// Extract modem info
 	modemInfo := util.ExtractASCII(data[mdModemOffset : mdModemOffset+mdModemLen])
 
+	// Check for 32X by looking for "MARS" at offset 0x3C0
+	// This is the start of the MARS header (e.g., "MARS CHECK MODE")
+	is32X := false
+	if len(data) >= md32XHeaderOffset+md32XMagicLen {
+		marsData := string(data[md32XHeaderOffset : md32XHeaderOffset+md32XMagicLen])
+		if marsData == md32XMagic {
+			is32X = true
+		}
+	}
+
 	return &MDInfo{
 		SystemType:    systemType,
 		Copyright:     copyright,
@@ -208,6 +241,7 @@ func parseMDBytes(data []byte) (*MDInfo, error) {
 		RAMEnd:        ramEnd,
 		SRAMInfo:      sramInfo,
 		ModemInfo:     modemInfo,
+		Is32X:         is32X,
 	}, nil
 }
 

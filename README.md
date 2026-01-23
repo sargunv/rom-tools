@@ -56,11 +56,10 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 ### Sega formats
 
 - 🟢 [./lib/roms/sms](./lib/roms/sms): Sega Master System and Game Gear ROM header parsing.
-- 🟢 [./lib/roms/megadrive](./lib/roms/megadrive): Sega Mega Drive (Genesis) ROM header parsing, including SMD format.
+- 🟢 [./lib/roms/megadrive](./lib/roms/megadrive): Sega Mega Drive (Genesis) ROM header parsing, including SMD format and 32X detection.
 - 🟢 [./lib/roms/saturn](./lib/roms/saturn): Sega Saturn disc identification from system area headers.
 - 🟢 [./lib/roms/dreamcast](./lib/roms/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
 - Sega CD: [TODO](https://github.com/sargunv/rom-tools/issues/23)
-- Sega 32X: [TODO](https://github.com/sargunv/rom-tools/issues/24)
 
 ### Sony formats
 

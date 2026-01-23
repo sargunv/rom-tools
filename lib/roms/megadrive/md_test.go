@@ -1,6 +1,7 @@
 package megadrive
 
 import (
+	"bytes"
 	"os"
 	"testing"
 )
@@ -65,5 +66,98 @@ func TestParseMD(t *testing.T) {
 	// Verify basic parsing succeeded
 	if info.SystemType == "" {
 		t.Error("SystemType should not be empty")
+	}
+
+	// Verify Is32X is false for regular MD ROMs
+	if info.Is32X {
+		t.Error("Is32X should be false for regular MD ROMs")
+	}
+}
+
+func TestParse32X(t *testing.T) {
+	// Create synthetic 32X ROM data
+	// Minimum size for 32X detection: md32XHeaderOffset + md32XMagicLen = 0x3C4
+	data := make([]byte, 0x400)
+
+	// Set up valid MD header at offset 0x100
+	copy(data[mdSystemTypeOffset:], "SEGA 32X        ") // 16 bytes
+	copy(data[mdCopyrightOffset:], "(C)TEST 2024.JAN")  // 16 bytes
+	copy(data[mdDomesticTitleOff:], "TEST 32X GAME")    // Domestic title
+	copy(data[mdOverseasTitleOff:], "TEST 32X GAME")    // Overseas title
+	copy(data[mdSerialNumberOffset:], "GM 00000000-00") // Serial
+	copy(data[mdDeviceSupportOff:], "J")                // Device support
+	copy(data[mdRegionOffset:], "JUE")                  // Region
+
+	// Set up MARS header at offset 0x3C0
+	copy(data[md32XHeaderOffset:], "MARS CHECK MODE")
+
+	reader := bytes.NewReader(data)
+	info, err := Parse(reader, int64(len(data)))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Verify Is32X is true
+	if !info.Is32X {
+		t.Error("Is32X should be true for 32X ROMs with MARS header")
+	}
+
+	// Verify other fields are still parsed correctly
+	if info.SystemType != "SEGA 32X" {
+		t.Errorf("SystemType = %q, want %q", info.SystemType, "SEGA 32X")
+	}
+}
+
+func TestParse32X_NoMarsHeader(t *testing.T) {
+	// Create synthetic MD ROM data without MARS header
+	// Large enough for 32X detection, but without the magic string
+	data := make([]byte, 0x400)
+
+	// Set up valid MD header at offset 0x100
+	copy(data[mdSystemTypeOffset:], "SEGA MEGA DRIVE ") // 16 bytes
+	copy(data[mdCopyrightOffset:], "(C)TEST 2024.JAN")  // 16 bytes
+	copy(data[mdDomesticTitleOff:], "TEST MD GAME")     // Domestic title
+	copy(data[mdOverseasTitleOff:], "TEST MD GAME")     // Overseas title
+	copy(data[mdSerialNumberOffset:], "GM 00000000-00") // Serial
+	copy(data[mdDeviceSupportOff:], "J")                // Device support
+	copy(data[mdRegionOffset:], "JUE")                  // Region
+
+	// No MARS header - leave offset 0x3C0 as zeros
+
+	reader := bytes.NewReader(data)
+	info, err := Parse(reader, int64(len(data)))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Verify Is32X is false (no MARS header)
+	if info.Is32X {
+		t.Error("Is32X should be false for MD ROMs without MARS header")
+	}
+}
+
+func TestParse32X_SmallFile(t *testing.T) {
+	// Create synthetic MD ROM that is too small for 32X detection
+	// Just large enough for the MD header (0x200 bytes)
+	data := make([]byte, 0x200)
+
+	// Set up valid MD header at offset 0x100
+	copy(data[mdSystemTypeOffset:], "SEGA MEGA DRIVE ") // 16 bytes
+	copy(data[mdCopyrightOffset:], "(C)TEST 2024.JAN")  // 16 bytes
+	copy(data[mdDomesticTitleOff:], "TEST SMALL")       // Domestic title
+	copy(data[mdOverseasTitleOff:], "TEST SMALL")       // Overseas title
+	copy(data[mdSerialNumberOffset:], "GM 00000000-00") // Serial
+	copy(data[mdDeviceSupportOff:], "J")                // Device support
+	copy(data[mdRegionOffset:], "JUE")                  // Region
+
+	reader := bytes.NewReader(data)
+	info, err := Parse(reader, int64(len(data)))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Verify Is32X is false for small files (cannot check MARS header)
+	if info.Is32X {
+		t.Error("Is32X should be false for files too small to contain MARS header")
 	}
 }

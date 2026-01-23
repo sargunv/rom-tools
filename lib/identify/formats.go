@@ -42,8 +42,15 @@ func mdInfoToGameIdent(info *megadrive.MDInfo) *GameIdent {
 	if title == "" {
 		title = info.DomesticTitle
 	}
+
+	// Determine platform based on whether this is a 32X ROM
+	platform := core.PlatformMD
+	if info.Is32X {
+		platform = core.Platform32X
+	}
+
 	return &GameIdent{
-		Platform: core.PlatformMD,
+		Platform: platform,
 		Title:    title,
 		Serial:   info.SerialNumber,
 		Extra:    info,
@@ -265,6 +272,17 @@ func identifySMD(r io.ReaderAt, size int64) (*GameIdent, error) {
 	}
 	if info.SourceFormat != megadrive.FormatSMD {
 		return nil, fmt.Errorf("format mismatch: expected SMD, got MD")
+	}
+	return mdInfoToGameIdent(info), nil
+}
+
+func identify32X(r io.ReaderAt, size int64) (*GameIdent, error) {
+	info, err := megadrive.Parse(r, size)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Is32X {
+		return nil, fmt.Errorf("not a 32X ROM: MARS header not found")
 	}
 	return mdInfoToGameIdent(info), nil
 }
