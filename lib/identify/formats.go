@@ -101,6 +101,21 @@ func dreamcastInfoToGameIdent(info *dreamcast.DreamcastInfo) *GameIdent {
 	}
 }
 
+func segaCDInfoToGameIdent(info *megadrive.SegaCDInfo) *GameIdent {
+	// Use overseas title if available, otherwise domestic title
+	title := info.OverseasTitle
+	if title == "" {
+		title = info.DomesticTitle
+	}
+
+	return &GameIdent{
+		Platform: core.PlatformSegaCD,
+		Title:    title,
+		Serial:   info.SerialNumber,
+		Extra:    info,
+	}
+}
+
 func cnfInfoToGameIdent(info *playstation_cnf.CNFInfo) *GameIdent {
 	return &GameIdent{
 		Platform: info.Platform,
@@ -339,9 +354,12 @@ func identifyISO9660(r io.ReaderAt, size int64) (*GameIdent, error) {
 		return nil, err
 	}
 
-	// Try to read system area (sector 0) for Saturn/Dreamcast identification
+	// Try to read system area (sector 0) for Sega CD/Saturn/Dreamcast identification
 	systemArea := make([]byte, 2048)
 	if _, err := reader.ReadAt(systemArea, 0); err == nil {
+		if info, err := megadrive.ParseSegaCD(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
+			return segaCDInfoToGameIdent(info), nil
+		}
 		if info, err := saturn.ParseSaturn(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
 			return saturnInfoToGameIdent(info), nil
 		}
