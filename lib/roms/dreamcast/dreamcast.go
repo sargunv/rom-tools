@@ -116,7 +116,7 @@ func parseDreamcastBytes(data []byte) (*DreamcastInfo, error) {
 	area := parseAreaSymbols(data[areaOffset : areaOffset+areaSize])
 
 	info := &DreamcastInfo{
-		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
+		Title:         util.ExtractShiftJIS(data[titleOffset : titleOffset+titleSize]),
 		ProductNumber: util.ExtractASCII(data[productOffset : productOffset+productSize]),
 		MakerID:       util.ExtractASCII(data[makerOffset : makerOffset+makerSize]),
 		DeviceInfo:    util.ExtractASCII(data[deviceOffset : deviceOffset+deviceSize]),

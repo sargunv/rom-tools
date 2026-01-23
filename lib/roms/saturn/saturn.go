@@ -111,7 +111,7 @@ func parseSaturnBytes(data []byte) (*SaturnInfo, error) {
 	area := parseAreaSymbols(data[areaOffset : areaOffset+areaSize])
 
 	info := &SaturnInfo{
-		Title:         util.ExtractASCII(data[titleOffset : titleOffset+titleSize]),
+		Title:         util.ExtractShiftJIS(data[titleOffset : titleOffset+titleSize]),
 		MakerID:       util.ExtractASCII(data[makerOffset : makerOffset+makerSize]),
 		ProductNumber: util.ExtractASCII(data[productOffset : productOffset+productSize]),
 		Version:       util.ExtractASCII(data[versionOffset : versionOffset+versionSize]),
