@@ -3,26 +3,11 @@ package identify
 
 import "github.com/sargunv/rom-tools/lib/core"
 
-// Re-export hash types from core for convenience.
-type HashType = core.HashType
-
-const (
-	HashSHA1                = core.HashSHA1
-	HashMD5                 = core.HashMD5
-	HashCRC32               = core.HashCRC32
-	HashZipCRC32            = core.HashZipCRC32
-	HashCHDUncompressedSHA1 = core.HashCHDUncompressedSHA1
-	HashCHDCompressedSHA1   = core.HashCHDCompressedSHA1
-)
-
-// Re-export Hashes from core for convenience.
-type Hashes = core.Hashes
-
 // Item represents one identifiable unit (a file or entry within a container).
 type Item struct {
 	Name   string        `json:"name"`             // filename (basename for single files, relative path in containers)
 	Size   int64         `json:"size"`             // file size in bytes
-	Hashes Hashes        `json:"hashes,omitempty"` // hash values by type
+	Hashes core.Hashes   `json:"hashes,omitempty"` // hash values by type
 	Game   core.GameInfo `json:"game,omitempty"`   // identified game info (platform-specific struct)
 }
 

@@ -10,7 +10,6 @@ import (
 	"github.com/sargunv/rom-tools/internal/container/folder"
 	"github.com/sargunv/rom-tools/internal/container/zip"
 	"github.com/sargunv/rom-tools/internal/util"
-	"github.com/sargunv/rom-tools/lib/chd"
 	"github.com/sargunv/rom-tools/lib/core"
 )
 
@@ -114,17 +113,14 @@ func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, opts Opt
 	}
 	defer reader.Close()
 
-	// Identify the game
-	item.Game = identifyGame(reader, size, entry.Name)
+	// Identify the game (may also return embedded hashes for formats like CHD)
+	game, embeddedHashes := identifyGame(reader, size, entry.Name)
+	item.Game = game
 
-	// If no pre-computed hashes, calculate them (respecting MaxHashSize)
+	// If no pre-computed hashes, use embedded or calculate them
 	if entry.Hashes == nil {
-		// Handle CHD: extract hashes from the parsed info
-		if chdInfo, ok := item.Game.(*chd.Info); ok {
-			item.Hashes = Hashes{
-				HashCHDUncompressedSHA1: chdInfo.RawSHA1,
-				HashCHDCompressedSHA1:   chdInfo.SHA1,
-			}
+		if embeddedHashes != nil {
+			item.Hashes = embeddedHashes
 		} else if opts.MaxHashSize < 0 || size <= opts.MaxHashSize {
 			// Calculate hashes if within size limit
 			hashes, err := calculateHashes(reader, size)
@@ -141,8 +137,8 @@ func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, opts Opt
 // identifyReader identifies a single file from a reader.
 // Returns an Item with hashes and game info.
 func identifyReader(r util.RandomAccessReader, size int64, name string, opts Options) (*Item, error) {
-	// Try to identify game
-	game := identifyGame(r, size, name)
+	// Try to identify game (may also return embedded hashes for formats like CHD)
+	game, embeddedHashes := identifyGame(r, size, name)
 
 	item := &Item{
 		Name: name,
@@ -150,12 +146,9 @@ func identifyReader(r util.RandomAccessReader, size int64, name string, opts Opt
 		Game: game,
 	}
 
-	// Handle CHD: extract hashes from the parsed info
-	if chdInfo, ok := game.(*chd.Info); ok {
-		item.Hashes = Hashes{
-			HashCHDUncompressedSHA1: chdInfo.RawSHA1,
-			HashCHDCompressedSHA1:   chdInfo.SHA1,
-		}
+	// Use embedded hashes if provided (CHD, etc.)
+	if embeddedHashes != nil {
+		item.Hashes = embeddedHashes
 		return item, nil
 	}
 
@@ -175,22 +168,26 @@ func identifyReader(r util.RandomAccessReader, size int64, name string, opts Opt
 }
 
 // identifyGame tries to identify the game from a reader.
-// Returns the game info (nil if not identifiable).
-func identifyGame(r io.ReaderAt, size int64, name string) core.GameInfo {
+// Returns the game info and any embedded hashes (both may be nil).
+func identifyGame(r io.ReaderAt, size int64, name string) (core.GameInfo, core.Hashes) {
 	// Get candidate parsers by extension
 	parsers := identifyByExtension(name)
 	if len(parsers) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Try each parser
 	// TODO: log parser errors at debug level when logging is available
 	for _, parser := range parsers {
-		game, err := parser(r, size)
+		game, hashes, err := parser(r, size)
 		if err == nil && game != nil {
-			return game
+			return game, hashes
+		}
+		// If game is nil but hashes exist (e.g., CHD with unknown content), keep them
+		if err == nil && hashes != nil {
+			return nil, hashes
 		}
 	}
 
-	return nil
+	return nil, nil
 }

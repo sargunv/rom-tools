@@ -42,7 +42,7 @@ func TestIdentifyZIP(t *testing.T) {
 		t.Fatalf("Expected 1 hash (zip-crc32 from metadata), got %d", len(item.Hashes))
 	}
 
-	_, ok := item.Hashes[HashZipCRC32]
+	_, ok := item.Hashes[core.HashZipCRC32]
 	if !ok {
 		t.Error("Expected zip-crc32 hash from ZIP metadata")
 	}
@@ -98,7 +98,7 @@ func TestIdentifyLooseFile(t *testing.T) {
 	}
 
 	// Verify SHA1 hash
-	sha1Value, ok := item.Hashes[HashSHA1]
+	sha1Value, ok := item.Hashes[core.HashSHA1]
 	if !ok {
 		t.Fatal("SHA1 hash not found")
 	}
@@ -107,7 +107,7 @@ func TestIdentifyLooseFile(t *testing.T) {
 	}
 
 	// Verify MD5 hash
-	md5Value, ok := item.Hashes[HashMD5]
+	md5Value, ok := item.Hashes[core.HashMD5]
 	if !ok {
 		t.Fatal("MD5 hash not found")
 	}
@@ -116,7 +116,7 @@ func TestIdentifyLooseFile(t *testing.T) {
 	}
 
 	// Verify CRC32 hash
-	crc32Value, ok := item.Hashes[HashCRC32]
+	crc32Value, ok := item.Hashes[core.HashCRC32]
 	if !ok {
 		t.Fatal("CRC32 hash not found")
 	}

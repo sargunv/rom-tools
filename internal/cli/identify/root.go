@@ -1,6 +1,7 @@
 package identify
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/sargunv/rom-tools/internal/format"
+	"github.com/sargunv/rom-tools/lib/core"
 	romident "github.com/sargunv/rom-tools/lib/identify"
 
 	"github.com/spf13/cobra"
@@ -116,13 +118,7 @@ func outputText(result *romident.Result) {
 		items := make([]romident.Item, len(result.Items))
 		copy(items, result.Items)
 		slices.SortFunc(items, func(a, b romident.Item) int {
-			if a.Name < b.Name {
-				return -1
-			}
-			if a.Name > b.Name {
-				return 1
-			}
-			return 0
+			return cmp.Compare(a.Name, b.Name)
 		})
 
 		for _, item := range items {
@@ -132,18 +128,12 @@ func outputText(result *romident.Result) {
 			if len(item.Hashes) > 0 {
 				fmt.Println("    Hashes:")
 				// Sort hash types for consistent output
-				hashTypes := make([]romident.HashType, 0, len(item.Hashes))
+				hashTypes := make([]core.HashType, 0, len(item.Hashes))
 				for ht := range item.Hashes {
 					hashTypes = append(hashTypes, ht)
 				}
-				slices.SortFunc(hashTypes, func(a, b romident.HashType) int {
-					if a < b {
-						return -1
-					}
-					if a > b {
-						return 1
-					}
-					return 0
+				slices.SortFunc(hashTypes, func(a, b core.HashType) int {
+					return cmp.Compare(a, b)
 				})
 				for _, ht := range hashTypes {
 					fmt.Printf("      %s: %s\n",

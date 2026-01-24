@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+
+	"github.com/sargunv/rom-tools/lib/core"
 )
 
 // calculateHashes computes SHA1, MD5, and CRC32 hashes from a ReaderAt in a single pass.
-func calculateHashes(r io.ReaderAt, size int64) (Hashes, error) {
+func calculateHashes(r io.ReaderAt, size int64) (core.Hashes, error) {
 	sha1Hash := sha1.New()
 	md5Hash := md5.New()
 	crc32Hash := crc32.NewIEEE()
@@ -24,9 +26,9 @@ func calculateHashes(r io.ReaderAt, size int64) (Hashes, error) {
 		return nil, fmt.Errorf("failed to read data for hashing: %w", err)
 	}
 
-	return Hashes{
-		HashSHA1:  hex.EncodeToString(sha1Hash.Sum(nil)),
-		HashMD5:   hex.EncodeToString(md5Hash.Sum(nil)),
-		HashCRC32: fmt.Sprintf("%08x", crc32Hash.Sum32()),
+	return core.Hashes{
+		core.HashSHA1:  hex.EncodeToString(sha1Hash.Sum(nil)),
+		core.HashMD5:   hex.EncodeToString(md5Hash.Sum(nil)),
+		core.HashCRC32: fmt.Sprintf("%08x", crc32Hash.Sum32()),
 	}, nil
 }

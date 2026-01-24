@@ -21,16 +21,17 @@ import (
 )
 
 // IdentifyFunc attempts to identify a ROM from a reader.
-// Returns the game info if successful, or an error if the format doesn't match.
-type IdentifyFunc func(r io.ReaderAt, size int64) (core.GameInfo, error)
+// Returns game info, optional embedded hashes (for formats like CHD), and error.
+type IdentifyFunc func(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error)
 
-// wrapParser converts a typed parser function to the generic GameInfo signature.
+// wrapParser converts a typed parser function to the generic signature.
 // This is needed because Go function types are invariant - a function returning
 // *GBAInfo is not assignable to a function returning GameInfo even though
 // *GBAInfo implements GameInfo.
 func wrapParser[T core.GameInfo](fn func(io.ReaderAt, int64) (T, error)) IdentifyFunc {
-	return func(r io.ReaderAt, size int64) (core.GameInfo, error) {
-		return fn(r, size)
+	return func(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error) {
+		info, err := fn(r, size)
+		return info, nil, err
 	}
 }
 
