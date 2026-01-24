@@ -12,6 +12,7 @@ prettier = "latest"
 
 [env]
 _.file = '.env'
+_.path = 'bin'
 
 [tasks.setup]
 run = [
@@ -27,9 +28,6 @@ sources = ["go.mod", "go.sum", "**/*.go"]
 [tasks.test]
 run = "go test ./..."
 sources = ["go.mod", "go.sum", "**/*.go"]
-
-[tasks.rom-tools]
-run = "go run ./cmd/rom-tools"
 
 [tasks.clean]
 run = "go clean"
@@ -54,7 +52,7 @@ description = "Run all code generation tasks"
 run = [
     "rm -rf docs",
     "go run ./cmd/gen-docs",
-    "prettier --write docs/**/*.md",
+    "prettier --log-level=warn --write docs/**/*.md",
     "go generate ./..."
 ]
 sources = [
@@ -69,7 +67,6 @@ outputs = [
 
 [tasks.ci]
 description = "Run all CI checks locally"
-depends = ["generate", "build", "test", "fix", "check"]
 run = [
     "mise run generate",
     "mise run build",
