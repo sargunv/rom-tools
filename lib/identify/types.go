@@ -45,6 +45,7 @@ const (
 	FormatGCM     Format = "gcm"
 	FormatRVZ     Format = "rvz"
 	FormatSMS     Format = "sms"
+	FormatPKG     Format = "pkg"
 )
 
 // HashAlgorithm identifies a hash algorithm.

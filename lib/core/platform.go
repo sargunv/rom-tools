@@ -30,6 +30,7 @@ const (
 
 	PlatformPSP    Platform = "psp"
 	PlatformPSVita Platform = "psvita"
+	PlatformPSM    Platform = "psm"
 
 	PlatformMS        Platform = "mastersystem"
 	PlatformMD        Platform = "megadrive"
