@@ -10,14 +10,6 @@ import (
 	"github.com/sargunv/rom-tools/internal/util"
 )
 
-// ZIPHandler handles ZIP archive files.
-type ZIPHandler struct{}
-
-// NewZIPHandler creates a new ZIP handler.
-func NewZIPHandler() *ZIPHandler {
-	return &ZIPHandler{}
-}
-
 // ZIPArchive represents an open ZIP archive and implements Container.
 type ZIPArchive struct {
 	reader  *zip.ReadCloser
@@ -57,7 +49,7 @@ func (z *ZIPArchive) OpenFileAt(name string) (util.RandomAccessReader, int64, er
 }
 
 // Open opens a ZIP archive and returns metadata for all files.
-func (h *ZIPHandler) Open(path string) (*ZIPArchive, error) {
+func Open(path string) (*ZIPArchive, error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open ZIP: %w", err)

@@ -1,7 +1,6 @@
 package folder
 
 import (
-	"io"
 	"testing"
 )
 
@@ -65,14 +64,5 @@ func TestFolderContainerOpenFileAt(t *testing.T) {
 	}
 	if string(magic) != "XBEH" {
 		t.Errorf("Expected magic 'XBEH', got '%s'", string(magic))
-	}
-
-	// Verify Seek works
-	pos, err := reader.Seek(0, io.SeekStart)
-	if err != nil {
-		t.Fatalf("Seek() error = %v", err)
-	}
-	if pos != 0 {
-		t.Errorf("Expected position 0, got %d", pos)
 	}
 }

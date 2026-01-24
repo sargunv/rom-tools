@@ -69,19 +69,14 @@ func runIdentify(cmd *cobra.Command, args []string) error {
 
 	for _, path := range args {
 		result, err := romident.Identify(path, opts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to identify %s: %v\n", path, err)
+			continue
+		}
 
 		if jsonOutput {
-			if err != nil {
-				// For JSON output, include errors in the output
-				outputJSONLine(&romident.Result{Path: path, Error: err.Error()})
-			} else {
-				outputJSONLine(result)
-			}
+			outputJSONLine(result)
 		} else {
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to identify %s: %v\n", path, err)
-				continue
-			}
 			if !first {
 				fmt.Println()
 			}

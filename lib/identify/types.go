@@ -28,9 +28,8 @@ type Item struct {
 
 // Result is the result of identifying a path.
 type Result struct {
-	Path  string `json:"path"`            // absolute path that was identified
-	Items []Item `json:"items"`           // identified items (1 for single file, N for containers)
-	Error string `json:"error,omitempty"` // error message if identification failed
+	Path  string `json:"path"`  // absolute path that was identified
+	Items []Item `json:"items"` // identified items (1 for single file, N for containers)
 }
 
 // HashMode controls how hashes are calculated.

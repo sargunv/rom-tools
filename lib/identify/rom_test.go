@@ -114,7 +114,7 @@ func TestIdentifyLooseFile_Hashing(t *testing.T) {
 	}
 }
 
-func TestIdentifyZIPFastMode(t *testing.T) {
+func TestIdentifyZIPDefaultMode(t *testing.T) {
 	romPath := "testdata/AGB_Rogue.gba.zip"
 
 	result, err := Identify(romPath, Options{HashMode: HashModeDefault})
@@ -127,19 +127,21 @@ func TestIdentifyZIPFastMode(t *testing.T) {
 	}
 
 	item := result.Items[0]
-
-	// In fast mode, we should only have ZIP CRC32
-	if len(item.Hashes) != 1 {
-		t.Fatalf("Expected 1 hash (zip-crc32), got %d", len(item.Hashes))
+	if item.Name != "AGB_Rogue.gba" {
+		t.Errorf("Expected item name 'AGB_Rogue.gba', got '%s'", item.Name)
 	}
 
-	_, ok := item.Hashes[HashZipCRC32]
-	if !ok {
-		t.Error("Expected zip-crc32 hash in fast mode")
+	// ZIP contents are fully identified like any other container
+	if item.Game == nil {
+		t.Fatal("Expected game identification, got nil")
 	}
 
-	// No game identification in fast mode
-	if item.Game != nil {
-		t.Error("Expected no game identification in fast mode")
+	if item.Game.GamePlatform() != core.PlatformGBA {
+		t.Errorf("Expected platform %s, got %s", core.PlatformGBA, item.Game.GamePlatform())
+	}
+
+	// Should have standard hashes
+	if len(item.Hashes) != 3 {
+		t.Fatalf("Expected 3 hashes, got %d", len(item.Hashes))
 	}
 }

@@ -28,10 +28,9 @@ type FileContainer interface {
 	Close() error
 }
 
-// RandomAccessReader combines io.ReaderAt, io.Seeker, and io.Closer.
+// RandomAccessReader combines io.ReaderAt and io.Closer.
 // This is needed for format detection and identification which require random access.
 type RandomAccessReader interface {
 	io.ReaderAt
-	io.Seeker
 	io.Closer
 }

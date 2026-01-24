@@ -8,8 +8,7 @@ import (
 func TestZIPArchive(t *testing.T) {
 	zipPath := "testdata/gbtictac.gb.zip"
 
-	handler := NewZIPHandler()
-	archive, err := handler.Open(zipPath)
+	archive, err := Open(zipPath)
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
@@ -38,8 +37,7 @@ func TestZIPArchive(t *testing.T) {
 func TestZIPArchiveOpenFileAt(t *testing.T) {
 	zipPath := "testdata/xromwell.xiso.iso.zip"
 
-	handler := NewZIPHandler()
-	archive, err := handler.Open(zipPath)
+	archive, err := Open(zipPath)
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
@@ -65,14 +63,5 @@ func TestZIPArchiveOpenFileAt(t *testing.T) {
 	expectedMagic := "MICROSOFT*XBOX*MEDIA"
 	if string(xisoMagic[:20]) != expectedMagic {
 		t.Errorf("Expected XISO magic '%s', got '%s'", expectedMagic, string(xisoMagic[:20]))
-	}
-
-	// Verify Seek works
-	pos, err := reader.Seek(0, io.SeekStart)
-	if err != nil {
-		t.Fatalf("Seek() error = %v", err)
-	}
-	if pos != 0 {
-		t.Errorf("Expected position 0, got %d", pos)
 	}
 }
