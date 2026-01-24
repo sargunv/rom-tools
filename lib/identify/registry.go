@@ -6,18 +6,20 @@ import (
 	"strings"
 
 	"github.com/sargunv/rom-tools/lib/core"
-	"github.com/sargunv/rom-tools/lib/roms/gamecube"
-	"github.com/sargunv/rom-tools/lib/roms/gb"
-	"github.com/sargunv/rom-tools/lib/roms/gba"
-	"github.com/sargunv/rom-tools/lib/roms/megadrive"
-	"github.com/sargunv/rom-tools/lib/roms/n3ds"
-	"github.com/sargunv/rom-tools/lib/roms/n64"
-	"github.com/sargunv/rom-tools/lib/roms/nds"
-	"github.com/sargunv/rom-tools/lib/roms/nes"
-	"github.com/sargunv/rom-tools/lib/roms/playstation/psnpkg"
-	"github.com/sargunv/rom-tools/lib/roms/sms"
-	"github.com/sargunv/rom-tools/lib/roms/snes"
-	"github.com/sargunv/rom-tools/lib/roms/xbox"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gb"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gba"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gcm"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/n3ds"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/n64"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/nds"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/nes"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/rvz"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/sfc"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/pkg"
+	"github.com/sargunv/rom-tools/lib/roms/sega/md"
+	"github.com/sargunv/rom-tools/lib/roms/sega/sms"
+	"github.com/sargunv/rom-tools/lib/roms/xbox/xbe"
+	"github.com/sargunv/rom-tools/lib/roms/xbox/xiso"
 )
 
 // IdentifyFunc attempts to identify a ROM from a reader.
@@ -47,25 +49,25 @@ var registry = map[string][]IdentifyFunc{
 	".3ds":  {wrapParser(n3ds.ParseN3DS)},
 	".cci":  {wrapParser(n3ds.ParseN3DS)},
 	".nes":  {wrapParser(nes.ParseNES)},
-	".sfc":  {wrapParser(snes.ParseSNES)},
-	".smc":  {wrapParser(snes.ParseSNES)},
+	".sfc":  {wrapParser(sfc.ParseSNES)},
+	".smc":  {wrapParser(sfc.ParseSNES)},
 	".z64":  {wrapParser(n64.ParseN64)},
 	".v64":  {wrapParser(n64.ParseN64)},
 	".n64":  {wrapParser(n64.ParseN64)},
-	".md":   {wrapParser(megadrive.Parse)},
-	".gen":  {wrapParser(megadrive.Parse)},
-	".32x":  {wrapParser(megadrive.Parse)},
-	".smd":  {wrapParser(megadrive.Parse)},
+	".md":   {wrapParser(md.Parse)},
+	".gen":  {wrapParser(md.Parse)},
+	".32x":  {wrapParser(md.Parse)},
+	".smd":  {wrapParser(md.Parse)},
 	".sms":  {wrapParser(sms.ParseSMS)},
 	".gg":   {wrapParser(sms.ParseSMS)},
-	".xbe":  {wrapParser(xbox.ParseXBE)},
-	".pkg":  {wrapParser(psnpkg.ParsePKG)},
+	".xbe":  {wrapParser(xbe.ParseXBE)},
+	".pkg":  {wrapParser(pkg.ParsePKG)},
 	".chd":  {identifyCHD},
-	".rvz":  {wrapParser(gamecube.ParseRVZ)},
-	".wia":  {wrapParser(gamecube.ParseRVZ)},
-	".gcm":  {wrapParser(gamecube.ParseGCM)},
-	".xiso": {wrapParser(xbox.ParseXISO)},
-	".iso":  {wrapParser(xbox.ParseXISO), wrapParser(gamecube.ParseGCM), identifyISO9660},
+	".rvz":  {wrapParser(rvz.ParseRVZ)},
+	".wia":  {wrapParser(rvz.ParseRVZ)},
+	".gcm":  {wrapParser(gcm.ParseGCM)},
+	".xiso": {wrapParser(xiso.ParseXISO)},
+	".iso":  {wrapParser(xiso.ParseXISO), wrapParser(gcm.ParseGCM), identifyISO9660},
 	".bin":  {identifyISO9660},
 }
 

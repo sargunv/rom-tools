@@ -7,11 +7,11 @@ import (
 	"github.com/sargunv/rom-tools/lib/chd"
 	"github.com/sargunv/rom-tools/lib/core"
 	"github.com/sargunv/rom-tools/lib/iso9660"
-	"github.com/sargunv/rom-tools/lib/roms/dreamcast"
-	"github.com/sargunv/rom-tools/lib/roms/megadrive"
 	"github.com/sargunv/rom-tools/lib/roms/playstation/cnf"
 	"github.com/sargunv/rom-tools/lib/roms/playstation/sfo"
-	"github.com/sargunv/rom-tools/lib/roms/saturn"
+	"github.com/sargunv/rom-tools/lib/roms/sega/dreamcast"
+	"github.com/sargunv/rom-tools/lib/roms/sega/md"
+	"github.com/sargunv/rom-tools/lib/roms/sega/saturn"
 )
 
 func identifyCHD(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error) {
@@ -51,7 +51,7 @@ func identifyISO9660(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, err
 	// Try to read system area (sector 0) for Sega CD/Saturn/Dreamcast identification
 	systemArea := make([]byte, 2048)
 	if _, err := reader.ReadAt(systemArea, 0); err == nil {
-		if info, err := megadrive.ParseSegaCD(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
+		if info, err := md.ParseSegaCD(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
 			return info, nil, nil
 		}
 		if info, err := saturn.ParseSaturn(bytes.NewReader(systemArea), int64(len(systemArea))); err == nil {
