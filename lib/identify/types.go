@@ -25,13 +25,13 @@ type Options struct {
 	//   - Embedded format hashes (e.g., CHD files provide chd-*-sha1)
 	// Files exceeding this limit will have no hashes unless provided by the above sources.
 	// Use -1 for no limit (always calculate when needed).
-	// Default is 64 MiB.
+	// Default is -1 (no limit).
 	MaxHashSize int64
 }
 
 // DefaultOptions returns Options with sensible defaults.
 func DefaultOptions() Options {
 	return Options{
-		MaxHashSize: 64 * 1024 * 1024, // 64 MiB
+		MaxHashSize: -1, // no limit
 	}
 }
