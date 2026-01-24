@@ -1,6 +1,9 @@
 package identify
 
-import "io"
+import (
+	"bytes"
+	"io"
+)
 
 // Magic bytes and offsets for container/disc formats (non-game formats).
 // Game format verification is delegated to the format registry identifiers.
@@ -76,13 +79,16 @@ func checkMagic(r io.ReaderAt, size int64, offset int64, magic []byte) bool {
 	if _, err := r.ReadAt(buf, offset); err != nil {
 		return false
 	}
-	return bytesEqual(buf, magic)
+	return bytes.Equal(buf, magic)
 }
 
 // detect identifies the format using extension to narrow candidates, then verifies.
 // Returns Unknown for generic extensions (like .bin) or if verification fails.
 // For game formats, this delegates to the format registry's identifiers.
-func (d *detector) detect(r interface{ io.ReaderAt; io.Seeker }, size int64, filename string) (Format, error) {
+func (d *detector) detect(r interface {
+	io.ReaderAt
+	io.Seeker
+}, size int64, filename string) (Format, error) {
 	candidates := d.candidatesByExtension(filename)
 	if len(candidates) == 0 {
 		// Generic or unknown extension: no identification
@@ -98,16 +104,4 @@ func (d *detector) detect(r interface{ io.ReaderAt; io.Seeker }, size int64, fil
 
 	// Extension suggested format(s) but none verified
 	return FormatUnknown, nil
-}
-
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
