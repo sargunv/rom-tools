@@ -26,7 +26,75 @@ func TestParseNDS(t *testing.T) {
 		t.Fatalf("ParseNDS() error = %v", err)
 	}
 
+	// Verify platform
 	if info.GamePlatform() != core.PlatformNDS {
-		t.Errorf("Expected platform %s, got %s", core.PlatformNDS, info.GamePlatform())
+		t.Errorf("GamePlatform() = %s, want %s", info.GamePlatform(), core.PlatformNDS)
 	}
+
+	// Verify game code and components
+	if info.GameCode != "AXXE" {
+		t.Errorf("GameCode = %q, want %q", info.GameCode, "AXXE")
+	}
+	if info.GameType != NDSGameTypeNDS {
+		t.Errorf("GameType = %c, want %c", info.GameType, NDSGameTypeNDS)
+	}
+	if info.UniqueCode != "XX" {
+		t.Errorf("UniqueCode = %q, want %q", info.UniqueCode, "XX")
+	}
+	if info.Destination != NDSDestinationUSA {
+		t.Errorf("Destination = %c, want %c", info.Destination, NDSDestinationUSA)
+	}
+
+	// Verify serial (GameSerial returns GameCode)
+	if info.GameSerial() != "AXXE" {
+		t.Errorf("GameSerial() = %q, want %q", info.GameSerial(), "AXXE")
+	}
+
+	// Verify unit code (NDS only)
+	if info.UnitCode != NDSUnitCodeNDS {
+		t.Errorf("UnitCode = %d, want %d", info.UnitCode, NDSUnitCodeNDS)
+	}
+
+	// Verify NDS region (Normal/worldwide)
+	if info.NDSRegion != NDSRegionNormal {
+		t.Errorf("NDSRegion = %d, want %d", info.NDSRegion, NDSRegionNormal)
+	}
+
+	// Verify ROM size calculation (DeviceCapacity=0 means 128KB)
+	if info.DeviceCapacity != 0 {
+		t.Errorf("DeviceCapacity = %d, want %d", info.DeviceCapacity, 0)
+	}
+	expectedROMSize := 128 * 1024 // 128KB
+	if info.ROMSize != expectedROMSize {
+		t.Errorf("ROMSize = %d, want %d", info.ROMSize, expectedROMSize)
+	}
+
+	// Verify version
+	if info.Version != 0 {
+		t.Errorf("Version = %d, want %d", info.Version, 0)
+	}
+}
+
+func TestParseNDS_TooSmall(t *testing.T) {
+	// Create a reader with less than header size
+	data := make([]byte, 100)
+	r := &bytesReaderAt{data: data}
+
+	_, err := ParseNDS(r, int64(len(data)))
+	if err == nil {
+		t.Error("ParseNDS() expected error for file too small, got nil")
+	}
+}
+
+// bytesReaderAt wraps a byte slice for io.ReaderAt
+type bytesReaderAt struct {
+	data []byte
+}
+
+func (r *bytesReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
+	if off >= int64(len(r.data)) {
+		return 0, nil
+	}
+	n = copy(p, r.data[off:])
+	return n, nil
 }
