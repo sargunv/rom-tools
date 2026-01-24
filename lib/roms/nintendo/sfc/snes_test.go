@@ -1,4 +1,4 @@
-package snes
+package sfc
 
 import (
 	"bytes"

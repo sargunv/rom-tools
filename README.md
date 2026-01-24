@@ -43,32 +43,34 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 
 ### Nintendo formats
 
-- 🟢 [./lib/roms/nes](./lib/roms/nes): NES ROM parsing for iNES and NES 2.0 formats.
-- 🟢 [./lib/roms/snes](./lib/roms/snes): Super Nintendo ROM header parsing with LoROM/HiROM detection.
-- 🟢 [./lib/roms/n64](./lib/roms/n64): Nintendo 64 ROM parsing with support for Z64, V64, and N64 byte orders.
-- 🟢 [./lib/roms/gamecube](./lib/roms/gamecube): GameCube and Wii disc header parsing, including RVZ support.
-- 🟢 [./lib/roms/gb](./lib/roms/gb): Game Boy and Game Boy Color ROM header parsing.
-- 🟢 [./lib/roms/gba](./lib/roms/gba): Game Boy Advance ROM header parsing.
-- 🟢 [./lib/roms/nds](./lib/roms/nds): Nintendo DS ROM header parsing.
-- 🔴 [./lib/roms/n3ds](./lib/roms/n3ds): Nintendo 3DS CCI/NCSD ROM parsing with New 3DS detection.
+- 🟢 [./lib/roms/nintendo/nes](./lib/roms/nintendo/nes): NES ROM parsing for iNES and NES 2.0 formats.
+- 🟢 [./lib/roms/nintendo/sfc](./lib/roms/nintendo/sfc): Super Nintendo ROM header parsing with LoROM/HiROM detection.
+- 🟢 [./lib/roms/nintendo/n64](./lib/roms/nintendo/n64): Nintendo 64 ROM parsing with support for Z64, V64, and N64 byte orders.
+- 🟢 [./lib/roms/nintendo/gcm](./lib/roms/nintendo/gcm): GameCube and Wii disc header parsing.
+- 🟢 [./lib/roms/nintendo/rvz](./lib/roms/nintendo/rvz): RVZ/WIA compressed disc image parsing.
+- 🟢 [./lib/roms/nintendo/gb](./lib/roms/nintendo/gb): Game Boy and Game Boy Color ROM header parsing.
+- 🟢 [./lib/roms/nintendo/gba](./lib/roms/nintendo/gba): Game Boy Advance ROM header parsing.
+- 🟢 [./lib/roms/nintendo/nds](./lib/roms/nintendo/nds): Nintendo DS ROM header parsing.
+- 🔴 [./lib/roms/nintendo/n3ds](./lib/roms/nintendo/n3ds): Nintendo 3DS CCI/NCSD ROM parsing with New 3DS detection.
 - Wii U: [TODO](https://github.com/sargunv/rom-tools/issues/25)
 
 ### Sega formats
 
-- 🟢 [./lib/roms/sms](./lib/roms/sms): Sega Master System and Game Gear ROM header parsing.
-- 🟢 [./lib/roms/megadrive](./lib/roms/megadrive): Sega Mega Drive (Genesis) ROM header parsing, including SMD format, 32X detection, and Sega CD disc identification.
-- 🟢 [./lib/roms/saturn](./lib/roms/saturn): Sega Saturn disc identification from system area headers.
-- 🟢 [./lib/roms/dreamcast](./lib/roms/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
+- 🟢 [./lib/roms/sega/sms](./lib/roms/sega/sms): Sega Master System and Game Gear ROM header parsing.
+- 🟢 [./lib/roms/sega/md](./lib/roms/sega/md): Sega Mega Drive (Genesis), 32X, and Sega CD ROM header parsing, including SMD deinterleaving.
+- 🟢 [./lib/roms/sega/saturn](./lib/roms/sega/saturn): Sega Saturn disc identification from system area headers.
+- 🟢 [./lib/roms/sega/dreamcast](./lib/roms/sega/dreamcast): Sega Dreamcast disc identification from IP.BIN headers.
 
 ### Sony formats
 
 - 🟢 [./lib/roms/playstation/cnf](./lib/roms/playstation/cnf): SYSTEM.CNF parsing for PlayStation 1/2 discs.
 - 🟢 [./lib/roms/playstation/sfo](./lib/roms/playstation/sfo): PARAM.SFO parsing for PSP, PS3, and PS Vita content.
-- 🟢 [./lib/roms/playstation/psnpkg](./lib/roms/playstation/psnpkg): PKG header parsing for PSP, PS3, and PS Vita content.
+- 🟢 [./lib/roms/playstation/pkg](./lib/roms/playstation/pkg): PKG header parsing for PSP, PS3, and PS Vita content.
 
 ### Xbox formats
 
-- 🟢 [./lib/roms/xbox](./lib/roms/xbox): Original Xbox XBE executable and XISO disc image parsing.
+- 🟢 [./lib/roms/xbox/xbe](./lib/roms/xbox/xbe): Original Xbox XBE executable parsing.
+- 🟢 [./lib/roms/xbox/xiso](./lib/roms/xbox/xiso): Original Xbox XISO disc image parsing.
 - Xbox 360: [TODO](https://github.com/sargunv/rom-tools/issues/26)
 
 ### Other formats

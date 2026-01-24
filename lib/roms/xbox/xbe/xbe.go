@@ -1,4 +1,4 @@
-package xbox
+package xbe
 
 import (
 	"encoding/binary"

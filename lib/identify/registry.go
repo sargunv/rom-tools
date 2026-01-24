@@ -6,18 +6,20 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sargunv/rom-tools/lib/roms/gamecube"
-	"github.com/sargunv/rom-tools/lib/roms/gb"
-	"github.com/sargunv/rom-tools/lib/roms/gba"
-	"github.com/sargunv/rom-tools/lib/roms/megadrive"
-	"github.com/sargunv/rom-tools/lib/roms/n3ds"
-	"github.com/sargunv/rom-tools/lib/roms/n64"
-	"github.com/sargunv/rom-tools/lib/roms/nds"
-	"github.com/sargunv/rom-tools/lib/roms/nes"
-	"github.com/sargunv/rom-tools/lib/roms/playstation/psnpkg"
-	"github.com/sargunv/rom-tools/lib/roms/sms"
-	"github.com/sargunv/rom-tools/lib/roms/snes"
-	"github.com/sargunv/rom-tools/lib/roms/xbox"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gb"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gba"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gcm"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/n3ds"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/n64"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/nds"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/nes"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/rvz"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/sfc"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/pkg"
+	"github.com/sargunv/rom-tools/lib/roms/sega/md"
+	"github.com/sargunv/rom-tools/lib/roms/sega/sms"
+	"github.com/sargunv/rom-tools/lib/roms/xbox/xbe"
+	"github.com/sargunv/rom-tools/lib/roms/xbox/xiso"
 )
 
 // formatEntry associates a format with its extensions and identification function.
@@ -48,22 +50,22 @@ var registry = []formatEntry{
 	{FormatNDS, []string{".nds", ".dsi", ".ids"}, wrapParser(nds.ParseNDS)},
 	{Format3DS, []string{".3ds", ".cci"}, wrapParser(n3ds.ParseN3DS)},
 	{FormatNES, []string{".nes"}, wrapParser(nes.ParseNES)},
-	{FormatSNES, []string{".sfc", ".smc"}, wrapParser(snes.ParseSNES)},
+	{FormatSNES, []string{".sfc", ".smc"}, wrapParser(sfc.ParseSNES)},
 	{FormatGB, []string{".gb", ".gbc"}, wrapParser(gb.ParseGB)},
 	{FormatZ64, []string{".z64"}, wrapParser(n64.ParseN64)},
 	{FormatV64, []string{".v64"}, wrapParser(n64.ParseN64)},
 	{FormatN64, []string{".n64"}, wrapParser(n64.ParseN64)},
-	{FormatMD, []string{".32x", ".md", ".gen"}, wrapParser(megadrive.Parse)},
-	{FormatSMD, []string{".smd"}, wrapParser(megadrive.Parse)},
+	{FormatMD, []string{".32x", ".md", ".gen"}, wrapParser(md.Parse)},
+	{FormatSMD, []string{".smd"}, wrapParser(md.Parse)},
 	{FormatSMS, []string{".sms", ".gg"}, wrapParser(sms.ParseSMS)},
-	{FormatXISO, []string{".xiso", ".iso"}, wrapParser(xbox.ParseXISO)},
-	{FormatXBE, []string{".xbe"}, wrapParser(xbox.ParseXBE)},
-	{FormatGCM, []string{".gcm", ".iso"}, wrapParser(gamecube.ParseGCM)},
-	{FormatRVZ, []string{".rvz", ".wia"}, wrapParser(gamecube.ParseRVZ)},
+	{FormatXISO, []string{".xiso", ".iso"}, wrapParser(xiso.ParseXISO)},
+	{FormatXBE, []string{".xbe"}, wrapParser(xbe.ParseXBE)},
+	{FormatGCM, []string{".gcm", ".iso"}, wrapParser(gcm.ParseGCM)},
+	{FormatRVZ, []string{".rvz", ".wia"}, wrapParser(rvz.ParseRVZ)},
 	{FormatCHD, []string{".chd"}, identifyCHD},
 	{FormatZIP, []string{".zip"}, nil},
 	{FormatISO9660, []string{".iso", ".bin"}, identifyISO9660},
-	{FormatPKG, []string{".pkg"}, wrapParser(psnpkg.ParsePKG)},
+	{FormatPKG, []string{".pkg"}, wrapParser(pkg.ParsePKG)},
 }
 
 // formatsByExtension returns all format entries that match the given filename extension.

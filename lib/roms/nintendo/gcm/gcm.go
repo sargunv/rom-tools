@@ -1,4 +1,4 @@
-package gamecube
+package gcm
 
 import (
 	"encoding/binary"

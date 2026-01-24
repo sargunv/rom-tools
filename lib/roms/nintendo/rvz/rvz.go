@@ -1,4 +1,4 @@
-package gamecube
+package rvz
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/sargunv/rom-tools/lib/core"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gcm"
 )
 
 // RVZ/WIA (Dolphin compressed disc image) format parsing.
@@ -88,7 +89,7 @@ const (
 // RVZInfo contains metadata extracted from an RVZ/WIA file header.
 type RVZInfo struct {
 	// GCM contains the game identification info parsed from the disc header.
-	GCM *GCMInfo `json:"gcm,omitempty"`
+	GCM *gcm.GCMInfo `json:"gcm,omitempty"`
 	// Version is the WIA format version.
 	Version uint32 `json:"version"`
 	// CompatibleVersion is the minimum compatible version.
@@ -155,12 +156,8 @@ func ParseRVZ(r io.ReaderAt, size int64) (*RVZInfo, error) {
 	dhead := make([]byte, dheadSize)
 	copy(dhead, header[discStructBase+dheadOffset:])
 
-	if len(dhead) < discHeaderSize {
-		return nil, fmt.Errorf("RVZ disc header too small: %d bytes (need %d)", len(dhead), discHeaderSize)
-	}
-
 	// Parse the embedded GCM header
-	gcmInfo, err := ParseGCM(bytes.NewReader(dhead), int64(len(dhead)))
+	gcmInfo, err := gcm.ParseGCM(bytes.NewReader(dhead), int64(len(dhead)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse disc header from RVZ: %w", err)
 	}

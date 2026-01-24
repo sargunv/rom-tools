@@ -1,10 +1,12 @@
-package xbox
+package xiso
 
 import (
 	"encoding/binary"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/sargunv/rom-tools/lib/roms/xbox/xbe"
 )
 
 // Xbox XISO (XDVDFS) format parsing.
@@ -25,7 +27,7 @@ const (
 )
 
 // ParseXISO extracts game information from an Xbox XISO image.
-func ParseXISO(r io.ReaderAt, size int64) (*XBEInfo, error) {
+func ParseXISO(r io.ReaderAt, size int64) (*xbe.XBEInfo, error) {
 	// Read volume descriptor
 	if size < xisoVolumeDescOffset+32 {
 		return nil, fmt.Errorf("file too small for XISO header")
@@ -53,7 +55,7 @@ func ParseXISO(r io.ReaderAt, size int64) (*XBEInfo, error) {
 
 	// Parse XBE using io.NewSectionReader to create a reader starting at the XBE offset
 	xbeReader := io.NewSectionReader(r, xbeOffset, size-xbeOffset)
-	return ParseXBE(xbeReader, size-xbeOffset)
+	return xbe.ParseXBE(xbeReader, size-xbeOffset)
 }
 
 // findDefaultXBE searches the XDVDFS directory tree for default.xbe.

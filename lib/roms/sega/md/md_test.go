@@ -1,4 +1,4 @@
-package megadrive
+package md
 
 import (
 	"bytes"
