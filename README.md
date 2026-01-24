@@ -36,7 +36,7 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 
 ### General utilities
 
-- 🔴 [./lib/identify](./lib/identify/): Utility to identify the title, serial, and other info of a ROM.
+- 🟡 [./lib/identify](./lib/identify/): Utility to identify the title, serial, and other info of a ROM.
 - 🟢 [./lib/datfile](./lib/datfile): Implementation of the Logiqx DAT XML format with No-Intro extensions.
 - 🟡 [./lib/chd](./lib/chd): Implementation of the CHD (Compressed Hunks of Data) disc image format.
 - 🟡 [./lib/iso9660](./lib/iso9660): ISO 9660 filesystem image parsing for optical disk platforms.

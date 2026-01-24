@@ -22,15 +22,15 @@ import (
 	"github.com/sargunv/rom-tools/lib/roms/xbox/xiso"
 )
 
-// IdentifyFunc attempts to identify a ROM from a reader.
+// identifyFunc attempts to identify content from a reader.
 // Returns game info, optional embedded hashes (for formats like CHD), and error.
-type IdentifyFunc func(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error)
+type identifyFunc func(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error)
 
 // wrapParser converts a typed parser function to the generic signature.
 // This is needed because Go function types are invariant - a function returning
 // *GBAInfo is not assignable to a function returning GameInfo even though
 // *GBAInfo implements GameInfo.
-func wrapParser[T core.GameInfo](fn func(io.ReaderAt, int64) (T, error)) IdentifyFunc {
+func wrapParser[T core.GameInfo](fn func(io.ReaderAt, int64) (T, error)) identifyFunc {
 	return func(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error) {
 		info, err := fn(r, size)
 		return info, nil, err
@@ -39,7 +39,7 @@ func wrapParser[T core.GameInfo](fn func(io.ReaderAt, int64) (T, error)) Identif
 
 // registry maps file extensions to ordered list of parsers to try.
 // Parsers are tried in order until one succeeds.
-var registry = map[string][]IdentifyFunc{
+var registry = map[string][]identifyFunc{
 	".gba":  {wrapParser(gba.ParseGBA)},
 	".gb":   {wrapParser(gb.ParseGB)},
 	".gbc":  {wrapParser(gb.ParseGB)},
@@ -72,7 +72,7 @@ var registry = map[string][]IdentifyFunc{
 }
 
 // identifyByExtension returns the list of parsers to try for a given filename.
-func identifyByExtension(filename string) []IdentifyFunc {
+func identifyByExtension(filename string) []identifyFunc {
 	ext := strings.ToLower(filepath.Ext(filename))
 	return registry[ext]
 }

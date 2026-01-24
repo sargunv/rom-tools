@@ -108,8 +108,8 @@ func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, opts Opt
 	}
 	defer reader.Close()
 
-	// Identify the game (may also return embedded hashes for formats like CHD)
-	game, embeddedHashes := identifyGame(reader, size, entry.Name)
+	// Identify the content (may also return embedded hashes for formats like CHD)
+	game, embeddedHashes := identifyContent(reader, size, entry.Name)
 	item.Game = game
 
 	// Build hashes: merge container metadata with embedded hashes
@@ -139,8 +139,8 @@ func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, opts Opt
 // identifyReader identifies a single file from a reader.
 // Returns an Item with hashes and game info.
 func identifyReader(r util.RandomAccessReader, size int64, name string, opts Options) (*Item, error) {
-	// Try to identify game (may also return embedded hashes for formats like CHD)
-	game, embeddedHashes := identifyGame(r, size, name)
+	// Try to identify content (may also return embedded hashes for formats like CHD)
+	game, embeddedHashes := identifyContent(r, size, name)
 
 	item := &Item{
 		Name: name,
@@ -169,9 +169,9 @@ func identifyReader(r util.RandomAccessReader, size int64, name string, opts Opt
 	return item, nil
 }
 
-// identifyGame tries to identify the game from a reader.
+// identifyContent tries to identify the content from a reader.
 // Returns the game info and any embedded hashes (both may be nil).
-func identifyGame(r io.ReaderAt, size int64, name string) (core.GameInfo, core.Hashes) {
+func identifyContent(r io.ReaderAt, size int64, name string) (core.GameInfo, core.Hashes) {
 	// Get candidate parsers by extension
 	parsers := identifyByExtension(name)
 	if len(parsers) == 0 {
