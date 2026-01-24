@@ -78,13 +78,10 @@ func identifyContainer(path string, c util.FileContainer, opts Options) (*Result
 		return nil, fmt.Errorf("container is empty")
 	}
 
-	// Determine if we should decompress for identification
-	shouldIdentify := !c.Compressed() || opts.DecompressArchives
-
 	items := make([]Item, 0, len(entries))
 
 	for _, entry := range entries {
-		item, err := identifyContainerEntry(c, entry, shouldIdentify, opts)
+		item, err := identifyContainerEntry(c, entry, opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to identify %s: %w", entry.Name, err)
 		}
@@ -99,8 +96,7 @@ func identifyContainer(path string, c util.FileContainer, opts Options) (*Result
 
 // identifyContainerEntry identifies a single entry within a container.
 // If the entry has pre-computed hashes, those are used (never calculated).
-// If shouldIdentify is true, the file is opened to identify the game.
-func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, shouldIdentify bool, opts Options) (*Item, error) {
+func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, opts Options) (*Item, error) {
 	item := &Item{
 		Name: entry.Name,
 		Size: entry.Size,
@@ -109,11 +105,6 @@ func identifyContainerEntry(c util.FileContainer, entry util.FileEntry, shouldId
 	// Use pre-computed hashes from container metadata if available
 	if entry.Hashes != nil {
 		item.Hashes = entry.Hashes
-	}
-
-	// Skip identification if not requested (compressed container with DecompressArchives=false)
-	if !shouldIdentify {
-		return item, nil
 	}
 
 	// Open and identify the file

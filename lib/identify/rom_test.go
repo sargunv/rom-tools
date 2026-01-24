@@ -6,13 +6,10 @@ import (
 	"github.com/sargunv/rom-tools/lib/core"
 )
 
-func TestIdentifyZIPWithDecompression(t *testing.T) {
+func TestIdentifyZIP(t *testing.T) {
 	romPath := "testdata/AGB_Rogue.gba.zip"
 
-	opts := DefaultOptions()
-	opts.DecompressArchives = true
-
-	result, err := Identify(romPath, opts)
+	result, err := Identify(romPath, DefaultOptions())
 	if err != nil {
 		t.Fatalf("Identify() error = %v", err)
 	}
@@ -27,7 +24,7 @@ func TestIdentifyZIPWithDecompression(t *testing.T) {
 		t.Errorf("Expected item name 'AGB_Rogue.gba', got '%s'", item.Name)
 	}
 
-	// Game should be identified when DecompressArchives=true
+	// Game should be identified
 	if item.Game == nil {
 		t.Fatal("Expected game identification, got nil")
 	}
@@ -48,39 +45,6 @@ func TestIdentifyZIPWithDecompression(t *testing.T) {
 	_, ok := item.Hashes[HashZipCRC32]
 	if !ok {
 		t.Error("Expected zip-crc32 hash from ZIP metadata")
-	}
-}
-
-func TestIdentifyZIPWithoutDecompression(t *testing.T) {
-	romPath := "testdata/AGB_Rogue.gba.zip"
-
-	opts := DefaultOptions()
-	opts.DecompressArchives = false
-
-	result, err := Identify(romPath, opts)
-	if err != nil {
-		t.Fatalf("Identify() error = %v", err)
-	}
-
-	if len(result.Items) != 1 {
-		t.Fatalf("Expected 1 item, got %d", len(result.Items))
-	}
-
-	item := result.Items[0]
-
-	// Should only have ZIP CRC32 from metadata
-	if len(item.Hashes) != 1 {
-		t.Fatalf("Expected 1 hash (zip-crc32), got %d", len(item.Hashes))
-	}
-
-	_, ok := item.Hashes[HashZipCRC32]
-	if !ok {
-		t.Error("Expected zip-crc32 hash")
-	}
-
-	// No game identification without decompression
-	if item.Game != nil {
-		t.Error("Expected no game identification without decompression")
 	}
 }
 
@@ -165,10 +129,7 @@ func TestIdentifyLooseFileSkipsHashForLargeFiles(t *testing.T) {
 	romPath := "testdata/gbtictac.gb"
 
 	// Set max hash size to 0 bytes, which should skip hashing
-	opts := Options{
-		MaxHashSize:        0,
-		DecompressArchives: true,
-	}
+	opts := Options{MaxHashSize: 0}
 
 	result, err := Identify(romPath, opts)
 	if err != nil {
@@ -196,10 +157,7 @@ func TestIdentifyLooseFileNoLimitHashes(t *testing.T) {
 	romPath := "testdata/gbtictac.gb"
 
 	// Set max hash size to -1 (no limit)
-	opts := Options{
-		MaxHashSize:        -1,
-		DecompressArchives: true,
-	}
+	opts := Options{MaxHashSize: -1}
 
 	result, err := Identify(romPath, opts)
 	if err != nil {

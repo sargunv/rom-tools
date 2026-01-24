@@ -22,11 +22,6 @@ func (z *ZIPArchive) Entries() []util.FileEntry {
 	return z.entries
 }
 
-// Compressed returns true for ZIP archives (decompression required).
-func (z *ZIPArchive) Compressed() bool {
-	return true
-}
-
 // Close closes the ZIP archive.
 func (z *ZIPArchive) Close() error {
 	return z.reader.Close()

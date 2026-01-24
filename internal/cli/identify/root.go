@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	jsonOutput         bool
-	maxHashSize        int64
-	decompressArchives bool
+	jsonOutput  bool
+	maxHashSize int64
 )
 
 var Cmd = &cobra.Command{
@@ -43,10 +42,9 @@ Supports:
   - Sony PlayStation Portable: .iso
   - Microsoft Xbox: .iso, .xbe
 - .chd discs: extracts SHA1 hashes from header (no decompression needed)
-- .zip archives: by default, decompresses to identify contents and calculate hashes.
-  Use --decompress-archives=false to use only ZIP metadata (CRC32).
-- All files: calculates SHA1, MD5, CRC32 for files under --max-hash-size.
-- All folders: identifies files within.`,
+- .zip archives: identifies contents using ZIP metadata for hashes (CRC32)
+- All files: calculates SHA1, MD5, CRC32 for files under --max-hash-size
+- All folders: identifies files within`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runIdentify,
 }
@@ -57,14 +55,11 @@ func init() {
 	Cmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Output results as JSON Lines (one JSON object per line)")
 	Cmd.Flags().Int64Var(&maxHashSize, "max-hash-size", defaults.MaxHashSize,
 		"Max file size in bytes for hash calculation (-1 = no limit)")
-	Cmd.Flags().BoolVar(&decompressArchives, "decompress-archives", defaults.DecompressArchives,
-		"Decompress archives to identify contents and calculate hashes")
 }
 
 func runIdentify(cmd *cobra.Command, args []string) error {
 	opts := romident.Options{
-		MaxHashSize:        maxHashSize,
-		DecompressArchives: decompressArchives,
+		MaxHashSize: maxHashSize,
 	}
 
 	first := true

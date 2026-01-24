@@ -39,18 +39,11 @@ type Options struct {
 	// Use -1 for no limit (always calculate hashes).
 	// Default is 64 MiB.
 	MaxHashSize int64
-
-	// DecompressArchives controls whether compressed archives (e.g., ZIP) are
-	// decompressed to calculate hashes and identify games inside.
-	// If false, only archive metadata (pre-computed CRC32, file sizes) is used.
-	// Default is true.
-	DecompressArchives bool
 }
 
 // DefaultOptions returns Options with sensible defaults.
 func DefaultOptions() Options {
 	return Options{
-		MaxHashSize:        64 * 1024 * 1024, // 64 MiB
-		DecompressArchives: true,
+		MaxHashSize: 64 * 1024 * 1024, // 64 MiB
 	}
 }

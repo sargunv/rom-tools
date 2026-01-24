@@ -76,11 +76,6 @@ func (f *FolderContainer) OpenFileAt(name string) (util.RandomAccessReader, int6
 	return file, info.Size(), nil
 }
 
-// Compressed returns false for folders (no decompression needed).
-func (f *FolderContainer) Compressed() bool {
-	return false
-}
-
 // Close releases resources (no-op for folders).
 func (f *FolderContainer) Close() error {
 	return nil
