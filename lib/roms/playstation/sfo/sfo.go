@@ -177,11 +177,11 @@ func detectPlatform(discID string) core.Platform {
 		"ULJS", "UCJS", // JP
 		"ULAS", "UCAS", // Asia
 		"ULKS", "UCKS", // Korea
-		"NPUG", "NPUH", // PSN digital US
-		"NPEG", "NPEH", // PSN digital EU
-		"NPJG", "NPJH", "NPJJ", // PSN digital JP
+		"NPUG", "NPUH", "NPUZ", // PSN digital US (Z=Minis)
+		"NPEG", "NPEH", "NPEZ", // PSN digital EU
+		"NPJG", "NPJH", "NPJJ", "NPJZ", // PSN digital JP
 		"NPAG", "NPAH", // PSN digital Asia
-		"NPHG", "NPHH": // PSN digital HK
+		"NPHG", "NPHH", "NPHZ": // PSN digital HK
 		return core.PlatformPSP
 	}
 
