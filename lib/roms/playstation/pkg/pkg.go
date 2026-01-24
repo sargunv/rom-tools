@@ -26,7 +26,7 @@
 //
 //	Each entry: ID (4 bytes BE) + Size (4 bytes BE) + Data (Size bytes)
 //	Key IDs: 0x02 = Content Type, 0x0E = SFO Info
-package psnpkg
+package pkg
 
 import (
 	"bytes"

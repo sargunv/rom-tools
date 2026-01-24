@@ -1,9 +1,17 @@
-package xbox
+package xiso
 
 import (
+	"bytes"
 	"os"
 	"testing"
 )
+
+// readerAt wraps a byte slice to implement io.ReaderAt
+type readerAt []byte
+
+func (r readerAt) ReadAt(p []byte, off int64) (n int, err error) {
+	return bytes.NewReader(r).ReadAt(p, off)
+}
 
 func TestParseXISO(t *testing.T) {
 	romPath := "testdata/xromwell.xiso.iso"

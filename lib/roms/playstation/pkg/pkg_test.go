@@ -1,4 +1,4 @@
-package psnpkg
+package pkg
 
 import (
 	"bytes"
