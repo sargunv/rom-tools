@@ -26,7 +26,11 @@ func identifyCHD(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error) 
 		core.HashCHDCompressedSHA1:   header.SHA1,
 	}
 
-	// Find first non-audio track and try to identify its content
+	// Find first non-audio track and try to identify its content.
+	// Errors are intentionally ignored: many disc formats (Sega CD, Saturn,
+	// Dreamcast) use custom headers rather than ISO9660. Failure to parse
+	// just means we return CHD hashes without game metadata, which is fine
+	// since CHD hashes are the primary identifier for DAT matching.
 	for _, track := range reader.Tracks {
 		if track.Type != "AUDIO" {
 			content, _, _ := identifyISO9660(track.Open(), track.Size())
@@ -37,7 +41,7 @@ func identifyCHD(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, error) 
 		}
 	}
 
-	// Try raw CHD access
+	// Try raw CHD access (for hard disk images, etc.)
 	content, _, _ := identifyISO9660(reader, reader.Size())
 	return content, hashes, nil
 }
@@ -82,6 +86,9 @@ func identifyISO9660(r io.ReaderAt, size int64) (core.GameInfo, core.Hashes, err
 		}
 	}
 
-	// Valid ISO but unknown content - return nil to try next parser
+	// Valid ISO9660 filesystem but no recognized game content.
+	// This is expected for data discs, unsupported platforms, etc.
+	// Returning nil allows the caller to try other parsers or fall back
+	// to hash-only identification, which is sufficient for DAT matching.
 	return nil, nil, nil
 }

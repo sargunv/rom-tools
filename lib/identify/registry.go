@@ -68,7 +68,7 @@ var registry = map[string][]IdentifyFunc{
 	".gcm":  {wrapParser(gcm.ParseGCM)},
 	".xiso": {wrapParser(xiso.ParseXISO)},
 	".iso":  {wrapParser(xiso.ParseXISO), wrapParser(gcm.ParseGCM), identifyISO9660},
-	".bin":  {identifyISO9660},
+	".bin":  {identifyISO9660, wrapParser(md.Parse)},
 }
 
 // identifyByExtension returns the list of parsers to try for a given filename.

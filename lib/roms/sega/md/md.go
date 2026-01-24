@@ -180,10 +180,7 @@ func parseMD(r io.ReaderAt, size int64) (*MDInfo, error) {
 
 	// Read enough for header + 32X detection (0x3C4 bytes)
 	// If file is smaller, read what we can (32X detection will be skipped)
-	readSize := int64(mdMinParseSize)
-	if size < readSize {
-		readSize = size
-	}
+	readSize := min(size, int64(mdMinParseSize))
 
 	data := make([]byte, readSize)
 	if _, err := r.ReadAt(data, 0); err != nil {
