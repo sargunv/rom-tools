@@ -50,7 +50,7 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 - 🟢 [./lib/roms/gb](./lib/roms/gb): Game Boy and Game Boy Color ROM header parsing.
 - 🟢 [./lib/roms/gba](./lib/roms/gba): Game Boy Advance ROM header parsing.
 - 🟢 [./lib/roms/nds](./lib/roms/nds): Nintendo DS ROM header parsing.
-- 🔴 [./lib/roms/n3ds](./lib/roms/n3ds): Nintendo 3DS CCI/NCSD ROM parsing with New 3DS detection.
+- 🟢 [./lib/roms/n3ds](./lib/roms/n3ds): Nintendo 3DS CCI/NCSD ROM parsing with New 3DS detection.
 - Wii U: [TODO](https://github.com/sargunv/rom-tools/issues/25)
 
 ### Sega formats

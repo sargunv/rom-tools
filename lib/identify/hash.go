@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"hash"
 	"hash/crc32"
 	"io"
 )
@@ -28,34 +27,6 @@ func calculateHashes(r io.Reader) ([]Hash, error) {
 		{Algorithm: HashMD5, Value: hex.EncodeToString(md5Hash.Sum(nil)), Source: HashSourceCalculated},
 		{Algorithm: HashCRC32, Value: fmt.Sprintf("%08x", crc32Hash.Sum32()), Source: HashSourceCalculated},
 	}, nil
-}
-
-// calculateSingleHash computes a single hash from a reader.
-func calculateSingleHash(r io.Reader, algorithm HashAlgorithm) (Hash, error) {
-	var h hash.Hash
-	switch algorithm {
-	case HashSHA1:
-		h = sha1.New()
-	case HashMD5:
-		h = md5.New()
-	case HashCRC32:
-		h = crc32.NewIEEE()
-	default:
-		return Hash{}, fmt.Errorf("unsupported hash algorithm: %s", algorithm)
-	}
-
-	if _, err := io.Copy(h, r); err != nil {
-		return Hash{}, fmt.Errorf("failed to read data for hashing: %w", err)
-	}
-
-	var value string
-	if algorithm == HashCRC32 {
-		value = fmt.Sprintf("%08x", h.(hash.Hash32).Sum32())
-	} else {
-		value = hex.EncodeToString(h.Sum(nil))
-	}
-
-	return Hash{Algorithm: algorithm, Value: value, Source: HashSourceCalculated}, nil
 }
 
 // newHash creates a Hash with the given parameters.
