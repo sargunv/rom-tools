@@ -1,4 +1,4 @@
-// Package pkg provides PlayStation PKG (package) file format parsing.
+// Package psnpkg provides PlayStation PKG (package) file format parsing.
 //
 // PKG is the package format used for digital distribution on PS3, PSP, PS Vita, and PSM.
 // This parser extracts identification metadata from PKG headers and embedded PARAM.SFO.
@@ -26,7 +26,7 @@
 //
 //	Each entry: ID (4 bytes BE) + Size (4 bytes BE) + Data (Size bytes)
 //	Key IDs: 0x02 = Content Type, 0x0E = SFO Info
-package pkg
+package psnpkg
 
 import (
 	"bytes"

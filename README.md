@@ -64,7 +64,7 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 
 - 🟢 [./lib/roms/playstation/cnf](./lib/roms/playstation/cnf): SYSTEM.CNF parsing for PlayStation 1/2 discs.
 - 🟢 [./lib/roms/playstation/sfo](./lib/roms/playstation/sfo): PARAM.SFO parsing for PSP, PS3, and PS Vita content.
-- 🟢 [./lib/roms/playstation/pkg](./lib/roms/playstation/pkg): PKG header parsing for PSP, PS3, and PS Vita content.
+- 🟢 [./lib/roms/playstation/psnpkg](./lib/roms/playstation/psnpkg): PKG header parsing for PSP, PS3, and PS Vita content.
 
 ### Xbox formats
 
