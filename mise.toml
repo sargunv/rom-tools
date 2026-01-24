@@ -22,9 +22,11 @@ run = [
 
 [tasks.build]
 run = "go build ./..."
+sources = ["go.mod", "go.sum", "**/*.go"]
 
 [tasks.test]
 run = "go test ./..."
+sources = ["go.mod", "go.sum", "**/*.go"]
 
 [tasks.rom-tools]
 run = "go run ./cmd/rom-tools"
@@ -35,10 +37,13 @@ run = "go clean"
 [tasks.check]
 description = "Run all checks (linters, etc.)"
 run = "hk run check"
+sources = ["go.mod", "go.sum", "**/*.go", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.json"]
 
 [tasks.fix]
 description = "Run all fixers (format, generate docs, etc.)"
 run = "hk run fix"
+sources = ["go.mod", "go.sum", "**/*.go", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.json"]
+outputs = ["go.mod", "go.sum", "**/*.go", "**/*.md", "**/*.yaml", "**/*.yml", "**/*.json"]
 
 [tasks.docs]
 description = "Open local API documentation in browser"
@@ -46,10 +51,31 @@ run = "pkgsite -open ."
 
 [tasks.generate]
 description = "Run all code generation tasks"
-depends = ["update-docs"]
-run = "go generate ./..."
+run = [
+    "rm -rf docs",
+    "go run ./cmd/gen-docs",
+    "prettier --write docs/**/*.md",
+    "go generate ./..."
+]
+sources = [
+    "internal/cli/**/*.go",
+    "lib/screenscraper/api.yaml",
+    "lib/screenscraper/oapi-codegen.yaml"
+]
+outputs = [
+    "docs/**/*.md",
+    "lib/screenscraper/client.gen.go"
+]
 
 [tasks.ci]
 description = "Run all CI checks locally"
 depends = ["generate", "build", "test", "fix", "check"]
-run = "git diff --exit-code"
+run = [
+    "mise run generate",
+    "mise run build",
+    "mise run test",
+    "mise run fix",
+    "mise run check",
+    "git diff --exit-code"
+]
+sources = []

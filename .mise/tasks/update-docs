@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-#MISE description="Update CLI documentation"
-
-set -euo pipefail
-
-rm -rf docs
-go run ./cmd/gen-docs
-prettier --log-level silent --write docs/**/*.md
