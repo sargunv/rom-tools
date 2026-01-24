@@ -1,4 +1,4 @@
-package gamecube
+package rvz
 
 import (
 	"bytes"
@@ -6,7 +6,48 @@ import (
 	"testing"
 
 	"github.com/sargunv/rom-tools/lib/core"
+	"github.com/sargunv/rom-tools/lib/roms/nintendo/gcm"
 )
+
+// makeSyntheticGCM creates a synthetic GameCube/Wii disc header for testing.
+func makeSyntheticGCM(system gcm.SystemCode, gameCode string, region gcm.Region, title string, isWii bool) []byte {
+	header := make([]byte, gcm.DiscHeaderSize)
+
+	// System code at offset 0x00
+	header[0] = byte(system)
+
+	// Game code at offset 0x01 (2 bytes)
+	if len(gameCode) >= 2 {
+		copy(header[1:], gameCode[:2])
+	}
+
+	// Region at offset 0x03
+	header[3] = byte(region)
+
+	// Maker code at offset 0x04 (2 bytes)
+	copy(header[4:], "01") // Nintendo
+
+	// Disc number and version
+	header[6] = 0
+	header[7] = 0
+
+	// Magic words
+	if isWii {
+		binary.BigEndian.PutUint32(header[0x18:], 0x5D1C9EA3) // Wii magic
+		binary.BigEndian.PutUint32(header[0x1C:], 0)
+	} else {
+		binary.BigEndian.PutUint32(header[0x18:], 0)
+		binary.BigEndian.PutUint32(header[0x1C:], 0xC2339F3D) // GC magic
+	}
+
+	// Title at offset 0x20 (64 bytes max)
+	if len(title) > 64 {
+		title = title[:64]
+	}
+	copy(header[0x20:], title)
+
+	return header
+}
 
 // makeSyntheticRVZ creates a synthetic RVZ/WIA file header for testing.
 func makeSyntheticRVZ(magic string, gcmData []byte, discType DiscType, compression Compression) []byte {
@@ -45,7 +86,7 @@ func makeSyntheticRVZ(magic string, gcmData []byte, discType DiscType, compressi
 }
 
 func TestParseRVZ_WIA(t *testing.T) {
-	gcmData := makeSyntheticGCM(SystemCodeGameCube, "MK", RegionNorthAmerica, "Test Game", false)
+	gcmData := makeSyntheticGCM(gcm.SystemCodeGameCube, "MK", gcm.RegionNorthAmerica, "Test Game", false)
 	header := makeSyntheticRVZ("WIA\x01", gcmData, DiscTypeGameCube, CompressionZstandard)
 	reader := bytes.NewReader(header)
 
@@ -69,7 +110,7 @@ func TestParseRVZ_WIA(t *testing.T) {
 }
 
 func TestParseRVZ_RVZ(t *testing.T) {
-	gcmData := makeSyntheticGCM(SystemCodeWii, "SM", RegionJapan, "Wii Game", true)
+	gcmData := makeSyntheticGCM(gcm.SystemCodeWii, "SM", gcm.RegionJapan, "Wii Game", true)
 	header := makeSyntheticRVZ("RVZ\x01", gcmData, DiscTypeWii, CompressionLZMA2)
 	reader := bytes.NewReader(header)
 
@@ -93,7 +134,7 @@ func TestParseRVZ_RVZ(t *testing.T) {
 }
 
 func TestParseRVZ_InvalidMagic(t *testing.T) {
-	gcmData := makeSyntheticGCM(SystemCodeGameCube, "MK", RegionNorthAmerica, "Test", false)
+	gcmData := makeSyntheticGCM(gcm.SystemCodeGameCube, "MK", gcm.RegionNorthAmerica, "Test", false)
 	header := makeSyntheticRVZ("BAD\x01", gcmData, DiscTypeGameCube, CompressionNone)
 	reader := bytes.NewReader(header)
 
@@ -114,7 +155,7 @@ func TestParseRVZ_TooSmall(t *testing.T) {
 }
 
 func TestRVZInfo_GameInfo(t *testing.T) {
-	gcmData := makeSyntheticGCM(SystemCodeGameCube, "MK", RegionNorthAmerica, "Test Title", false)
+	gcmData := makeSyntheticGCM(gcm.SystemCodeGameCube, "MK", gcm.RegionNorthAmerica, "Test Title", false)
 	header := makeSyntheticRVZ("RVZ\x01", gcmData, DiscTypeGameCube, CompressionZstandard)
 	reader := bytes.NewReader(header)
 

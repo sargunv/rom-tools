@@ -1,4 +1,4 @@
-package gamecube
+package gcm
 
 import (
 	"encoding/binary"
@@ -88,7 +88,7 @@ const (
 )
 
 const (
-	discHeaderSize = 0x60 // We only need first 96 bytes for identification
+	DiscHeaderSize = 0x60 // We only need first 96 bytes for identification
 
 	systemCodeOffset  = 0x000
 	gameCodeOffset    = 0x001
@@ -140,11 +140,11 @@ func (i *GCMInfo) GameSerial() string {
 
 // ParseGCM parses a GameCube/Wii disc header from a reader.
 func ParseGCM(r io.ReaderAt, size int64) (*GCMInfo, error) {
-	if size < discHeaderSize {
-		return nil, fmt.Errorf("file too small for disc header: need %d bytes, got %d", discHeaderSize, size)
+	if size < DiscHeaderSize {
+		return nil, fmt.Errorf("file too small for disc header: need %d bytes, got %d", DiscHeaderSize, size)
 	}
 
-	header := make([]byte, discHeaderSize)
+	header := make([]byte, DiscHeaderSize)
 	if _, err := r.ReadAt(header, 0); err != nil {
 		return nil, fmt.Errorf("failed to read disc header: %w", err)
 	}

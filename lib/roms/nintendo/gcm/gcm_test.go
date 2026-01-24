@@ -1,4 +1,4 @@
-package gamecube
+package gcm
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 
 // makeSyntheticGCM creates a synthetic GameCube/Wii disc header for testing.
 func makeSyntheticGCM(system SystemCode, gameCode string, region Region, title string, isWii bool) []byte {
-	header := make([]byte, discHeaderSize)
+	header := make([]byte, DiscHeaderSize)
 
 	// System code at offset 0x00
 	header[systemCodeOffset] = byte(system)
@@ -101,7 +101,7 @@ func TestParseGCM_Wii(t *testing.T) {
 }
 
 func TestParseGCM_InvalidMagic(t *testing.T) {
-	header := make([]byte, discHeaderSize)
+	header := make([]byte, DiscHeaderSize)
 	// No magic words set - both are zero
 	reader := bytes.NewReader(header)
 
@@ -112,7 +112,7 @@ func TestParseGCM_InvalidMagic(t *testing.T) {
 }
 
 func TestParseGCM_TooSmall(t *testing.T) {
-	header := make([]byte, 32) // Less than discHeaderSize (0x60 = 96)
+	header := make([]byte, 32) // Less than DiscHeaderSize (0x60 = 96)
 	reader := bytes.NewReader(header)
 
 	_, err := ParseGCM(reader, int64(len(header)))
