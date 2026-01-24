@@ -1,4 +1,4 @@
-package playstation_sfo
+package sfo
 
 import (
 	"bytes"
@@ -307,6 +307,91 @@ func TestParse_Errors(t *testing.T) {
 			_, err := Parse(bytes.NewReader(tt.data), int64(len(tt.data)))
 			if err == nil {
 				t.Error("Parse() expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestVitaSpecificFields(t *testing.T) {
+	entries := map[string]any{
+		"DISC_ID":           "PCSA00001",
+		"TITLE":             "Test Vita Game",
+		"STITLE":            "Test Vita",
+		"CONTENT_ID":        "UP0001-PCSA00001_00-TESTVITA00000001",
+		"CATEGORY":          "gd",
+		"PSP2_SYSTEM_VER":   uint32(0x03150000), // 3.21
+		"PSP2_DISP_VER":     "01.00",
+		"ATTRIBUTE2":        uint32(0x00000001),
+		"ATTRIBUTE_MINOR":   uint32(0x00000010),
+		"GC_RO_SIZE":        uint32(0x10000000),
+		"GC_RW_SIZE":        uint32(0x01000000),
+		"SAVEDATA_MAX_SIZE": uint32(0x02000000),
+		"PUBTOOLINFO":       "c_date=20150101",
+	}
+
+	data := makeTestSFO(entries)
+	info, err := Parse(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	// Verify platform detection
+	if info.GamePlatform() != core.PlatformPSVita {
+		t.Errorf("Platform = %v, want %v", info.GamePlatform(), core.PlatformPSVita)
+	}
+
+	// Verify Vita-specific fields
+	if info.ShortTitle != "Test Vita" {
+		t.Errorf("ShortTitle = %q, want %q", info.ShortTitle, "Test Vita")
+	}
+	if info.ContentID != "UP0001-PCSA00001_00-TESTVITA00000001" {
+		t.Errorf("ContentID = %q, want %q", info.ContentID, "UP0001-PCSA00001_00-TESTVITA00000001")
+	}
+	if info.VitaSystemVersion != "3.21" {
+		t.Errorf("VitaSystemVersion = %q, want %q", info.VitaSystemVersion, "3.21")
+	}
+	if info.VitaDisplayVersion != "01.00" {
+		t.Errorf("VitaDisplayVersion = %q, want %q", info.VitaDisplayVersion, "01.00")
+	}
+	if info.Attribute2 != 0x00000001 {
+		t.Errorf("Attribute2 = %d, want %d", info.Attribute2, 0x00000001)
+	}
+	if info.AttributeMinor != 0x00000010 {
+		t.Errorf("AttributeMinor = %d, want %d", info.AttributeMinor, 0x00000010)
+	}
+	if info.GameCardROSize != 0x10000000 {
+		t.Errorf("GameCardROSize = %d, want %d", info.GameCardROSize, 0x10000000)
+	}
+	if info.GameCardRWSize != 0x01000000 {
+		t.Errorf("GameCardRWSize = %d, want %d", info.GameCardRWSize, 0x01000000)
+	}
+	if info.SaveDataMaxSize != 0x02000000 {
+		t.Errorf("SaveDataMaxSize = %d, want %d", info.SaveDataMaxSize, 0x02000000)
+	}
+	if info.PubToolInfo != "c_date=20150101" {
+		t.Errorf("PubToolInfo = %q, want %q", info.PubToolInfo, "c_date=20150101")
+	}
+}
+
+func TestDecodeVitaSystemVersion(t *testing.T) {
+	tests := []struct {
+		name string
+		ver  uint32
+		want string
+	}{
+		{"zero", 0, ""},
+		{"3.21", 0x03150000, "3.21"},
+		{"1.00", 0x01000000, "1.00"},
+		{"3.60", 0x033C0000, "3.60"},
+		{"3.65", 0x03410000, "3.65"},
+		{"3.73", 0x03490000, "3.73"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := decodeVitaSystemVersion(tt.ver)
+			if got != tt.want {
+				t.Errorf("decodeVitaSystemVersion(0x%08X) = %q, want %q", tt.ver, got, tt.want)
 			}
 		})
 	}

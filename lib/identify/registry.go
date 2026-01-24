@@ -13,6 +13,7 @@ import (
 	"github.com/sargunv/rom-tools/lib/roms/n64"
 	"github.com/sargunv/rom-tools/lib/roms/nds"
 	"github.com/sargunv/rom-tools/lib/roms/nes"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/psnpkg"
 	"github.com/sargunv/rom-tools/lib/roms/sms"
 	"github.com/sargunv/rom-tools/lib/roms/snes"
 	"github.com/sargunv/rom-tools/lib/roms/xbox"
@@ -60,6 +61,7 @@ var registry = []formatEntry{
 	{FormatCHD, []string{".chd"}, identifyCHD},
 	{FormatZIP, []string{".zip"}, nil},
 	{FormatISO9660, []string{".iso", ".bin"}, identifyISO9660},
+	{FormatPKG, []string{".pkg"}, wrapParser(psnpkg.ParsePKG)},
 }
 
 // formatsByExtension returns all format entries that match the given filename extension.

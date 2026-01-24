@@ -1,4 +1,4 @@
-package playstation_cnf
+package cnf
 
 import (
 	"bufio"

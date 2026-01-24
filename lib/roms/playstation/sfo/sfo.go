@@ -1,4 +1,4 @@
-package playstation_sfo
+package sfo
 
 import (
 	"bytes"
@@ -61,6 +61,31 @@ type SFOInfo struct {
 	SystemVersion string `json:"system_version,omitempty"`
 	// Region is the geographic region code (REGION).
 	Region int `json:"region,omitempty"`
+
+	// PS Vita-specific fields (PSP2)
+	// Reference: https://www.psdevwiki.com/vita/param.sfo
+
+	// ShortTitle is the abbreviated game title (STITLE, max 52 bytes).
+	ShortTitle string `json:"short_title,omitempty"`
+	// ContentID is the full content identifier (CONTENT_ID, 48 bytes).
+	ContentID string `json:"content_id,omitempty"`
+	// VitaSystemVersion is the decoded minimum firmware version (from PSP2_SYSTEM_VER).
+	VitaSystemVersion string `json:"vita_system_version,omitempty"`
+	// VitaDisplayVersion is the display firmware version string (PSP2_DISP_VER, 8 bytes).
+	VitaDisplayVersion string `json:"vita_display_version,omitempty"`
+	// Attribute2 contains extended application flags (ATTRIBUTE2).
+	Attribute2 uint32 `json:"attribute2,omitempty"`
+	// AttributeMinor contains compatibility flags (ATTRIBUTE_MINOR).
+	AttributeMinor uint32 `json:"attribute_minor,omitempty"`
+	// GameCardROSize is the game card read-only partition size in bytes (GC_RO_SIZE).
+	GameCardROSize uint32 `json:"gc_ro_size,omitempty"`
+	// GameCardRWSize is the game card read-write partition size in bytes (GC_RW_SIZE).
+	GameCardRWSize uint32 `json:"gc_rw_size,omitempty"`
+	// SaveDataMaxSize is the maximum save data size in bytes (SAVEDATA_MAX_SIZE).
+	SaveDataMaxSize uint32 `json:"savedata_max_size,omitempty"`
+	// PubToolInfo contains SDK and build information (PUBTOOLINFO, max 512 bytes).
+	PubToolInfo string `json:"pubtoolinfo,omitempty"`
+
 	// platform is PSP, PS3, Vita, or PS4, determined from DISC_ID prefix (internal, used by GamePlatform).
 	platform core.Platform
 }
@@ -117,6 +142,17 @@ func Parse(r io.ReaderAt, size int64) (*SFOInfo, error) {
 		ParentalLevel: getInt(data, "PARENTAL_LEVEL"),
 		SystemVersion: systemVer,
 		Region:        getInt(data, "REGION"),
+		// PS Vita-specific fields
+		ShortTitle:         getString(data, "STITLE"),
+		ContentID:          getString(data, "CONTENT_ID"),
+		VitaSystemVersion:  decodeVitaSystemVersion(getUint32(data, "PSP2_SYSTEM_VER")),
+		VitaDisplayVersion: getString(data, "PSP2_DISP_VER"),
+		Attribute2:         getUint32(data, "ATTRIBUTE2"),
+		AttributeMinor:     getUint32(data, "ATTRIBUTE_MINOR"),
+		GameCardROSize:     getUint32(data, "GC_RO_SIZE"),
+		GameCardRWSize:     getUint32(data, "GC_RW_SIZE"),
+		SaveDataMaxSize:    getUint32(data, "SAVEDATA_MAX_SIZE"),
+		PubToolInfo:        getString(data, "PUBTOOLINFO"),
 	}, nil
 }
 
@@ -141,11 +177,11 @@ func detectPlatform(discID string) core.Platform {
 		"ULJS", "UCJS", // JP
 		"ULAS", "UCAS", // Asia
 		"ULKS", "UCKS", // Korea
-		"NPUG", "NPUH", // PSN digital US
-		"NPEG", "NPEH", // PSN digital EU
-		"NPJG", "NPJH", "NPJJ", // PSN digital JP
+		"NPUG", "NPUH", "NPUZ", // PSN digital US (Z=Minis)
+		"NPEG", "NPEH", "NPEZ", // PSN digital EU
+		"NPJG", "NPJH", "NPJJ", "NPJZ", // PSN digital JP
 		"NPAG", "NPAH", // PSN digital Asia
-		"NPHG", "NPHH": // PSN digital HK
+		"NPHG", "NPHH", "NPHZ": // PSN digital HK
 		return core.PlatformPSP
 	}
 
@@ -292,4 +328,24 @@ func getInt(sfo sfoData, key string) int {
 		return int(v)
 	}
 	return 0
+}
+
+// getUint32 returns a uint32 value from parsed SFO data.
+func getUint32(sfo sfoData, key string) uint32 {
+	if v, ok := sfo[key].(uint32); ok {
+		return v
+	}
+	return 0
+}
+
+// decodeVitaSystemVersion decodes PSP2_SYSTEM_VER into a version string.
+// The version is encoded as: major in bits 24-31, minor in bits 16-23.
+// Example: 0x03150000 → "3.21"
+func decodeVitaSystemVersion(ver uint32) string {
+	if ver == 0 {
+		return ""
+	}
+	major := ver >> 24
+	minor := (ver >> 16) & 0xFF
+	return fmt.Sprintf("%d.%02d", major, minor)
 }
