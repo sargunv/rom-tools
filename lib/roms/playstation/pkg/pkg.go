@@ -36,7 +36,7 @@ import (
 
 	"github.com/sargunv/rom-tools/internal/util"
 	"github.com/sargunv/rom-tools/lib/core"
-	"github.com/sargunv/rom-tools/lib/roms/playstation_sfo"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/sfo"
 )
 
 const (
@@ -115,7 +115,7 @@ type PKGInfo struct {
 	// ItemCount is the number of items in the package.
 	ItemCount uint32 `json:"item_count"`
 	// SFO contains the parsed PARAM.SFO data if available.
-	SFO *playstation_sfo.SFOInfo `json:"sfo,omitempty"`
+	SFO *sfo.SFOInfo `json:"sfo,omitempty"`
 }
 
 // GamePlatform implements identify.GameInfo.
@@ -200,7 +200,7 @@ func ParsePKG(r io.ReaderAt, size int64) (*PKGInfo, error) {
 	if sfoOffset > 0 && sfoSize > 0 && int64(sfoOffset)+int64(sfoSize) <= size {
 		sfoData := make([]byte, sfoSize)
 		if _, err := r.ReadAt(sfoData, int64(sfoOffset)); err == nil {
-			if sfoInfo, err := playstation_sfo.Parse(bytes.NewReader(sfoData), int64(sfoSize)); err == nil {
+			if sfoInfo, err := sfo.Parse(bytes.NewReader(sfoData), int64(sfoSize)); err == nil {
 				info.SFO = sfoInfo
 				if sfoInfo.Title != "" {
 					info.Title = sfoInfo.Title

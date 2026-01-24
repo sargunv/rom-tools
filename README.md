@@ -62,10 +62,9 @@ See the [CLI documentation](./docs/rom-tools.md) for complete usage information.
 
 ### Sony formats
 
-- 🟢 [./lib/roms/playstation_cnf](./lib/roms/playstation_cnf): PlayStation 1/2 SYSTEM.CNF parsing for disc identification.
-- 🟢 [./lib/roms/playstation_sfo](./lib/roms/playstation_sfo): PlayStation SFO metadata format for PSP, PS3, PS Vita, and PS4.
-- PS3: [TODO](https://github.com/sargunv/rom-tools/issues/27)
-- PS Vita: [TODO](https://github.com/sargunv/rom-tools/issues/28)
+- 🟢 [./lib/roms/playstation/cnf](./lib/roms/playstation/cnf): SYSTEM.CNF parsing for PlayStation 1/2 discs.
+- 🟢 [./lib/roms/playstation/sfo](./lib/roms/playstation/sfo): PARAM.SFO parsing for PSP, PS3, and PS Vita content.
+- 🟢 [./lib/roms/playstation/pkg](./lib/roms/playstation/pkg): PKG header parsing for PSP, PS3, and PS Vita content.
 
 ### Xbox formats
 

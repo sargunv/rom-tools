@@ -8,8 +8,8 @@ import (
 	"github.com/sargunv/rom-tools/lib/iso9660"
 	"github.com/sargunv/rom-tools/lib/roms/dreamcast"
 	"github.com/sargunv/rom-tools/lib/roms/megadrive"
-	"github.com/sargunv/rom-tools/lib/roms/playstation_cnf"
-	"github.com/sargunv/rom-tools/lib/roms/playstation_sfo"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/cnf"
+	"github.com/sargunv/rom-tools/lib/roms/playstation/sfo"
 	"github.com/sargunv/rom-tools/lib/roms/saturn"
 )
 
@@ -54,7 +54,7 @@ func identifyISO9660(r io.ReaderAt, size int64) (GameInfo, error) {
 	if fileReader, fileSize, err := reader.OpenFile("SYSTEM.CNF"); err == nil {
 		data := make([]byte, fileSize)
 		if _, err := fileReader.ReadAt(data, 0); err == nil {
-			if info, err := playstation_cnf.Parse(bytes.NewReader(data), fileSize); err == nil {
+			if info, err := cnf.Parse(bytes.NewReader(data), fileSize); err == nil {
 				return info, nil
 			}
 		}
@@ -64,7 +64,7 @@ func identifyISO9660(r io.ReaderAt, size int64) (GameInfo, error) {
 	if fileReader, fileSize, err := reader.OpenFile("PSP_GAME/PARAM.SFO"); err == nil {
 		data := make([]byte, fileSize)
 		if _, err := fileReader.ReadAt(data, 0); err == nil {
-			if info, err := playstation_sfo.Parse(bytes.NewReader(data), fileSize); err == nil {
+			if info, err := sfo.Parse(bytes.NewReader(data), fileSize); err == nil {
 				return info, nil
 			}
 		}

@@ -1,4 +1,4 @@
-package playstation_sfo
+package sfo
 
 import (
 	"bytes"
