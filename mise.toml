@@ -48,3 +48,8 @@ run = "pkgsite -open ."
 description = "Run all code generation tasks"
 depends = ["update-docs"]
 run = "go generate ./..."
+
+[tasks.ci]
+description = "Run all CI checks locally"
+depends = ["generate", "build", "test", "fix", "check"]
+run = "git diff --exit-code"

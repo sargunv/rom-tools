@@ -25,16 +25,4 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - run: mise run generate
-      - run: mise run build
-      - run: mise run test
-      - run: mise run fix
-      - run: mise run check
-
-      - name: Check for uncommitted changes from `generate` and `fix`
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Uncommitted changes detected after running 'mise run fix'. Please run it locally and commit the changes."
-            git diff
-            exit 1
-          fi
+      - run: mise run ci
