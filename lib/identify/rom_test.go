@@ -9,82 +9,137 @@ import (
 func TestIdentifyZIPSlowMode(t *testing.T) {
 	romPath := "testdata/AGB_Rogue.gba.zip"
 
-	rom, err := IdentifyROM(romPath, Options{HashMode: HashModeSlow})
+	result, err := Identify(romPath, Options{HashMode: HashModeSlow})
 	if err != nil {
-		t.Fatalf("IdentifyROM() error = %v", err)
+		t.Fatalf("Identify() error = %v", err)
 	}
 
-	if rom.Type != ROMTypeZIP {
-		t.Errorf("Expected type %s, got %s", ROMTypeZIP, rom.Type)
+	if len(result.Items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(result.Items))
 	}
 
-	if rom.Info == nil {
-		t.Fatal("Expected game identification in slow mode, got nil")
+	// Check item details
+	item := result.Items[0]
+	if item.Name != "AGB_Rogue.gba" {
+		t.Errorf("Expected item name 'AGB_Rogue.gba', got '%s'", item.Name)
 	}
 
-	if rom.Info.GamePlatform() != core.PlatformGBA {
-		t.Errorf("Expected platform %s, got %s", core.PlatformGBA, rom.Info.GamePlatform())
+	if item.Game == nil {
+		t.Fatal("Expected game identification, got nil")
 	}
 
-	if rom.Info.GameTitle() != "ROGUE" {
-		t.Errorf("Expected title 'ROGUE', got '%s'", rom.Info.GameTitle())
+	if item.Game.GamePlatform() != core.PlatformGBA {
+		t.Errorf("Expected platform %s, got %s", core.PlatformGBA, item.Game.GamePlatform())
+	}
+
+	if item.Game.GameTitle() != "ROGUE" {
+		t.Errorf("Expected title 'ROGUE', got '%s'", item.Game.GameTitle())
 	}
 }
 
 func TestIdentifyFolder(t *testing.T) {
 	romPath := "testdata/xromwell"
 
-	rom, err := IdentifyROM(romPath, Options{})
+	result, err := Identify(romPath, Options{})
 	if err != nil {
-		t.Fatalf("IdentifyROM() error = %v", err)
+		t.Fatalf("Identify() error = %v", err)
 	}
 
-	if rom.Type != ROMTypeFolder {
-		t.Errorf("Expected type %s, got %s", ROMTypeFolder, rom.Type)
+	if len(result.Items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(result.Items))
 	}
 
-	if rom.Info == nil {
+	// Check item details
+	item := result.Items[0]
+	if item.Name != "default.xbe" {
+		t.Errorf("Expected item name 'default.xbe', got '%s'", item.Name)
+	}
+
+	if item.Game == nil {
 		t.Fatal("Expected game identification, got nil")
 	}
 
-	if rom.Info.GamePlatform() != core.PlatformXbox {
-		t.Errorf("Expected platform %s, got %s", core.PlatformXbox, rom.Info.GamePlatform())
+	if item.Game.GamePlatform() != core.PlatformXbox {
+		t.Errorf("Expected platform %s, got %s", core.PlatformXbox, item.Game.GamePlatform())
 	}
 }
 
 func TestIdentifyLooseFile_Hashing(t *testing.T) {
 	romPath := "testdata/gbtictac.gb"
 
-	rom, err := IdentifyROM(romPath, Options{HashMode: HashModeDefault})
+	result, err := Identify(romPath, Options{HashMode: HashModeDefault})
 	if err != nil {
-		t.Fatalf("IdentifyROM() error = %v", err)
+		t.Fatalf("Identify() error = %v", err)
 	}
 
-	file, ok := rom.Files["gbtictac.gb"]
-	if !ok {
-		t.Fatal("Expected file 'gbtictac.gb' not found")
+	if len(result.Items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(result.Items))
 	}
 
-	if file.Size != 32768 {
-		t.Errorf("Expected size 32768, got %d", file.Size)
+	item := result.Items[0]
+
+	if item.Size != 32768 {
+		t.Errorf("Expected size 32768, got %d", item.Size)
 	}
 
-	if len(file.Hashes) != 3 {
-		t.Fatalf("Expected 3 hashes, got %d", len(file.Hashes))
+	if len(item.Hashes) != 3 {
+		t.Fatalf("Expected 3 hashes, got %d", len(item.Hashes))
 	}
 
 	// Verify SHA1 hash
-	var sha1Hash *Hash
-	for i := range file.Hashes {
-		if file.Hashes[i].Algorithm == HashSHA1 {
-			sha1Hash = &file.Hashes[i]
-			break
-		}
-	}
-	if sha1Hash == nil {
+	sha1Value, ok := item.Hashes[HashSHA1]
+	if !ok {
 		t.Fatal("SHA1 hash not found")
 	}
-	if sha1Hash.Value != "48a59d5b31e374731ece4d9eb33679d38143495e" {
-		t.Errorf("Expected SHA1 '48a59d5b31e374731ece4d9eb33679d38143495e', got '%s'", sha1Hash.Value)
+	if sha1Value != "48a59d5b31e374731ece4d9eb33679d38143495e" {
+		t.Errorf("Expected SHA1 '48a59d5b31e374731ece4d9eb33679d38143495e', got '%s'", sha1Value)
+	}
+
+	// Verify MD5 hash
+	md5Value, ok := item.Hashes[HashMD5]
+	if !ok {
+		t.Fatal("MD5 hash not found")
+	}
+	if md5Value != "ab37d2fbe51e62215975d6e8354dd071" {
+		t.Errorf("Expected MD5 'ab37d2fbe51e62215975d6e8354dd071', got '%s'", md5Value)
+	}
+
+	// Verify CRC32 hash
+	crc32Value, ok := item.Hashes[HashCRC32]
+	if !ok {
+		t.Fatal("CRC32 hash not found")
+	}
+	if crc32Value != "775ae755" {
+		t.Errorf("Expected CRC32 '775ae755', got '%s'", crc32Value)
+	}
+}
+
+func TestIdentifyZIPFastMode(t *testing.T) {
+	romPath := "testdata/AGB_Rogue.gba.zip"
+
+	result, err := Identify(romPath, Options{HashMode: HashModeDefault})
+	if err != nil {
+		t.Fatalf("Identify() error = %v", err)
+	}
+
+	if len(result.Items) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(result.Items))
+	}
+
+	item := result.Items[0]
+
+	// In fast mode, we should only have ZIP CRC32
+	if len(item.Hashes) != 1 {
+		t.Fatalf("Expected 1 hash (zip-crc32), got %d", len(item.Hashes))
+	}
+
+	_, ok := item.Hashes[HashZipCRC32]
+	if !ok {
+		t.Error("Expected zip-crc32 hash in fast mode")
+	}
+
+	// No game identification in fast mode
+	if item.Game != nil {
+		t.Error("Expected no game identification in fast mode")
 	}
 }

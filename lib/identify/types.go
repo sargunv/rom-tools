@@ -12,15 +12,6 @@ type GameInfo interface {
 	GameSerial() string // May be empty if format doesn't have serial
 }
 
-// ROMType indicates how the ROM is packaged.
-type ROMType string
-
-const (
-	ROMTypeFile   ROMType = "file"
-	ROMTypeZIP    ROMType = "zip"
-	ROMTypeFolder ROMType = "folder"
-)
-
 // Format represents a ROM file format.
 type Format string
 
@@ -49,49 +40,35 @@ const (
 	Format3DS     Format = "3ds"
 )
 
-// HashAlgorithm identifies a hash algorithm.
-type HashAlgorithm string
+// HashType identifies a specific hash (combines algorithm and source).
+type HashType string
 
 const (
-	HashSHA1  HashAlgorithm = "sha1"
-	HashMD5   HashAlgorithm = "md5"
-	HashCRC32 HashAlgorithm = "crc32"
+	HashSHA1                HashType = "sha1"
+	HashMD5                 HashType = "md5"
+	HashCRC32               HashType = "crc32"
+	HashZipCRC32            HashType = "zip-crc32"
+	HashCHDUncompressedSHA1 HashType = "chd-uncompressed-sha1"
+	HashCHDCompressedSHA1   HashType = "chd-compressed-sha1"
 )
 
-// HashSource indicates where a hash value came from.
-type HashSource string
+// Hashes maps hash type to hex-encoded value.
+type Hashes map[HashType]string
 
-const (
-	HashSourceCalculated    HashSource = "calculated"
-	HashSourceZIPMetadata   HashSource = "zip-metadata"
-	HashSourceCHDRaw        HashSource = "chd-raw"
-	HashSourceCHDCompressed HashSource = "chd-compressed"
-)
-
-// Hash represents a computed or extracted hash value.
-type Hash struct {
-	Algorithm HashAlgorithm `json:"algorithm"`
-	Value     string        `json:"value"` // hex-encoded
-	Source    HashSource    `json:"source"`
+// Item represents one identifiable unit (a file or entry within a container).
+type Item struct {
+	Name   string   `json:"name"`             // filename (basename for single files, relative path in containers)
+	Size   int64    `json:"size"`             // file size in bytes
+	Format Format   `json:"format,omitempty"` // detected format (gba, chd, etc.)
+	Hashes Hashes   `json:"hashes,omitempty"` // hash values by type
+	Game   GameInfo `json:"game,omitempty"`   // identified game info (platform-specific struct)
 }
 
-// ROMFile represents a single file within a ROM.
-type ROMFile struct {
-	Size      int64  `json:"size"`
-	Format    Format `json:"format"`
-	Hashes    []Hash `json:"hashes"`
-	IsPrimary bool   `json:"is_primary,omitempty"` // true if used for identification
-}
-
-// Files is a map of file path to file info.
-type Files map[string]ROMFile
-
-// ROM represents a complete game unit (single file, zip, or folder).
-type ROM struct {
-	Path  string   `json:"path"`
-	Type  ROMType  `json:"type"`
-	Files Files    `json:"files"`
-	Info  GameInfo `json:"info,omitempty"`
+// Result is the result of identifying a path.
+type Result struct {
+	Path  string `json:"path"`            // absolute path that was identified
+	Items []Item `json:"items"`           // identified items (1 for single file, N for containers)
+	Error string `json:"error,omitempty"` // error message if identification failed
 }
 
 // HashMode controls how hashes are calculated.
@@ -103,7 +80,7 @@ const (
 	HashModeDefault HashMode = iota
 
 	// HashModeFast skips hash calculation for large files, but still calculates
-	// hashes for small files (below FastModeSmallFileThreshold).
+	// hashes for small files (below fastModeSmallFileThreshold).
 	HashModeFast
 
 	// HashModeSlow calculates full hashes even when fast methods are available

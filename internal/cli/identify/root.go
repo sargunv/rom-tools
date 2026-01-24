@@ -68,14 +68,14 @@ func runIdentify(cmd *cobra.Command, args []string) error {
 	first := true
 
 	for _, path := range args {
-		rom, err := romident.IdentifyROM(path, opts)
+		result, err := romident.Identify(path, opts)
 
 		if jsonOutput {
 			if err != nil {
 				// For JSON output, include errors in the output
-				outputJSONLine(&romident.ROM{Path: path}, err)
+				outputJSONLine(&romident.Result{Path: path, Error: err.Error()})
 			} else {
-				outputJSONLine(rom, nil)
+				outputJSONLine(result)
 			}
 		} else {
 			if err != nil {
@@ -85,7 +85,7 @@ func runIdentify(cmd *cobra.Command, args []string) error {
 			if !first {
 				fmt.Println()
 			}
-			outputTextSingle(rom)
+			outputText(result)
 			first = false
 		}
 	}
@@ -93,76 +93,85 @@ func runIdentify(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// JSONResult wraps a ROM result with an optional error for JSON output.
-type JSONResult struct {
-	*romident.ROM
-	Error string `json:"error,omitempty"`
-}
-
-func outputJSONLine(rom *romident.ROM, err error) {
-	result := JSONResult{ROM: rom}
+func outputJSONLine(result *romident.Result) {
+	output, err := json.Marshal(result)
 	if err != nil {
-		result.Error = err.Error()
-	}
-
-	output, marshalErr := json.Marshal(result)
-	if marshalErr != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to marshal JSON: %v\n", marshalErr)
+		fmt.Fprintf(os.Stderr, "Error: failed to marshal JSON: %v\n", err)
 		return
 	}
 	fmt.Println(string(output))
 }
 
-func outputTextSingle(rom *romident.ROM) {
-	// Header
-	baseName := filepath.Base(rom.Path)
-	fmt.Println(format.HeaderStyle.Render(fmt.Sprintf("ROM (%s): %s", rom.Type, baseName)))
+func outputText(result *romident.Result) {
+	baseName := filepath.Base(result.Path)
 
-	// Files (sorted by path for consistent output)
-	if len(rom.Files) > 0 {
-		fmt.Println(format.HeaderStyle.Render("Files:"))
-
-		// Sort file paths
-		paths := make([]string, 0, len(rom.Files))
-		for path := range rom.Files {
-			paths = append(paths, path)
-		}
-		slices.Sort(paths)
-
-		for _, path := range paths {
-			f := rom.Files[path]
-			prefix := "  "
-			if f.IsPrimary {
-				prefix = "* "
-			}
-
-			fmt.Printf("%s%s\n", prefix, path)
-			fmt.Printf("    Size: %s\n", formatSize(f.Size))
-			if f.Format != romident.FormatUnknown {
-				fmt.Printf("    Format: %s\n", f.Format)
-			}
-
-			if len(f.Hashes) > 0 {
-				fmt.Println("    Hashes:")
-				for _, h := range f.Hashes {
-					fmt.Printf("      %s: %s (%s)\n",
-						format.LabelStyle.Render(string(h.Algorithm)),
-						h.Value,
-						h.Source)
-				}
-			}
-		}
+	// Determine type label
+	typeLabel := "file"
+	if len(result.Items) > 1 {
+		typeLabel = "container"
 	}
 
-	// Identification
-	if rom.Info != nil {
-		fmt.Println(format.HeaderStyle.Render("Identification:"))
-		fmt.Printf("  Platform: %s\n", rom.Info.GamePlatform())
-		if rom.Info.GameTitle() != "" {
-			fmt.Printf("  Title: %s\n", rom.Info.GameTitle())
-		}
-		if rom.Info.GameSerial() != "" {
-			fmt.Printf("  Serial: %s\n", rom.Info.GameSerial())
+	fmt.Println(format.HeaderStyle.Render(fmt.Sprintf("ROM (%s): %s", typeLabel, baseName)))
+
+	// Items (sorted by name for consistent output)
+	if len(result.Items) > 0 {
+		fmt.Println(format.HeaderStyle.Render("Items:"))
+
+		// Sort by name
+		items := make([]romident.Item, len(result.Items))
+		copy(items, result.Items)
+		slices.SortFunc(items, func(a, b romident.Item) int {
+			if a.Name < b.Name {
+				return -1
+			}
+			if a.Name > b.Name {
+				return 1
+			}
+			return 0
+		})
+
+		for _, item := range items {
+			fmt.Printf("  %s\n", item.Name)
+			fmt.Printf("    Size: %s\n", formatSize(item.Size))
+			if item.Format != "" && item.Format != romident.FormatUnknown {
+				fmt.Printf("    Format: %s\n", item.Format)
+			}
+
+			if len(item.Hashes) > 0 {
+				fmt.Println("    Hashes:")
+				// Sort hash types for consistent output
+				hashTypes := make([]romident.HashType, 0, len(item.Hashes))
+				for ht := range item.Hashes {
+					hashTypes = append(hashTypes, ht)
+				}
+				slices.SortFunc(hashTypes, func(a, b romident.HashType) int {
+					if a < b {
+						return -1
+					}
+					if a > b {
+						return 1
+					}
+					return 0
+				})
+				for _, ht := range hashTypes {
+					fmt.Printf("      %s: %s\n",
+						format.LabelStyle.Render(string(ht)),
+						item.Hashes[ht])
+				}
+			}
+
+			if item.Game != nil {
+				fmt.Println("    Game:")
+				if item.Game.GamePlatform() != "" {
+					fmt.Printf("      Platform: %s\n", item.Game.GamePlatform())
+				}
+				if item.Game.GameTitle() != "" {
+					fmt.Printf("      Title: %s\n", item.Game.GameTitle())
+				}
+				if item.Game.GameSerial() != "" {
+					fmt.Printf("      Serial: %s\n", item.Game.GameSerial())
+				}
+			}
 		}
 	}
 }

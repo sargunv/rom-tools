@@ -10,7 +10,7 @@ import (
 )
 
 // calculateHashes computes SHA1, MD5, and CRC32 hashes from a reader in a single pass.
-func calculateHashes(r io.Reader) ([]Hash, error) {
+func calculateHashes(r io.Reader) (Hashes, error) {
 	sha1Hash := sha1.New()
 	md5Hash := md5.New()
 	crc32Hash := crc32.NewIEEE()
@@ -22,18 +22,9 @@ func calculateHashes(r io.Reader) ([]Hash, error) {
 		return nil, fmt.Errorf("failed to read data for hashing: %w", err)
 	}
 
-	return []Hash{
-		{Algorithm: HashSHA1, Value: hex.EncodeToString(sha1Hash.Sum(nil)), Source: HashSourceCalculated},
-		{Algorithm: HashMD5, Value: hex.EncodeToString(md5Hash.Sum(nil)), Source: HashSourceCalculated},
-		{Algorithm: HashCRC32, Value: fmt.Sprintf("%08x", crc32Hash.Sum32()), Source: HashSourceCalculated},
+	return Hashes{
+		HashSHA1:  hex.EncodeToString(sha1Hash.Sum(nil)),
+		HashMD5:   hex.EncodeToString(md5Hash.Sum(nil)),
+		HashCRC32: fmt.Sprintf("%08x", crc32Hash.Sum32()),
 	}, nil
-}
-
-// newHash creates a Hash with the given parameters.
-func newHash(algorithm HashAlgorithm, value string, source HashSource) Hash {
-	return Hash{
-		Algorithm: algorithm,
-		Value:     value,
-		Source:    source,
-	}
 }

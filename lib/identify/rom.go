@@ -2,9 +2,9 @@ package identify
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/sargunv/rom-tools/internal/container/folder"
 	"github.com/sargunv/rom-tools/internal/container/zip"
@@ -12,9 +12,9 @@ import (
 	"github.com/sargunv/rom-tools/lib/chd"
 )
 
-// IdentifyROM identifies a ROM file, ZIP archive, or folder.
-// Returns a ROM struct with file information and hashes.
-func IdentifyROM(path string, opts Options) (*ROM, error) {
+// Identify identifies a ROM file, ZIP archive, or folder.
+// Returns a Result with identified items and their hashes.
+func Identify(path string, opts Options) (*Result, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve path: %w", err)
@@ -32,111 +32,69 @@ func IdentifyROM(path string, opts Options) (*ROM, error) {
 	return identifyFile(absPath, info.Size(), opts)
 }
 
-// identifyContainer processes any Container (folder, ZIP, etc.) and identifies all files within.
-func identifyContainer(c util.FileContainer, containerType ROMType, containerPath string, opts Options) (*ROM, error) {
-	entries := c.Entries()
-	if len(entries) == 0 {
-		return nil, fmt.Errorf("container is empty")
-	}
-
-	files := make(Files)
-	var romIdent GameInfo
-
-	for _, entry := range entries {
-		// Open file for identification
-		reader, size, err := c.OpenFileAt(entry.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open %s: %w", entry.Name, err)
-		}
-
-		romFile, fileIdent, err := identifySingleReader(reader, size, entry.Name, opts)
-		if err != nil {
-			reader.Close()
-			return nil, fmt.Errorf("failed to identify %s: %w", entry.Name, err)
-		}
-
-		// Add pre-computed CRC32 from container metadata if available and not already calculated
-		if entry.CRC32 != 0 {
-			hasCRC32 := false
-			for _, h := range romFile.Hashes {
-				if h.Algorithm == HashCRC32 {
-					hasCRC32 = true
-					break
-				}
-			}
-			if !hasCRC32 {
-				romFile.Hashes = append(romFile.Hashes, newHash(HashCRC32, fmt.Sprintf("%08x", entry.CRC32), HashSourceZIPMetadata))
-			}
-		}
-
-		// Collect identification (error if multiple conflicting identifications found)
-		if fileIdent != nil {
-			if romIdent != nil && !reflect.DeepEqual(romIdent, fileIdent) {
-				reader.Close()
-				return nil, fmt.Errorf("container has multiple game identifications: %s and %s", romIdent.GameSerial(), fileIdent.GameSerial())
-			}
-			romIdent = fileIdent
-		}
-
-		reader.Close()
-		files[entry.Name] = *romFile
-	}
-
-	return &ROM{
-		Path:  containerPath,
-		Type:  containerType,
-		Files: files,
-		Info:  romIdent,
-	}, nil
-}
-
-func identifyFolder(path string, opts Options) (*ROM, error) {
-	c, err := folder.NewFolderContainer(path)
-	if err != nil {
-		return nil, err
-	}
-	defer c.Close()
-
-	return identifyContainer(c, ROMTypeFolder, path, opts)
-}
-
-func identifyFile(path string, size int64, opts Options) (*ROM, error) {
+// identifyFile handles a single file (may be a container like ZIP).
+func identifyFile(path string, size int64, opts Options) (*Result, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer f.Close()
 
-	// Detect format
-	detectedFormat, err := detectFormat(f, size, filepath.Base(path))
-	if err != nil {
-		return nil, fmt.Errorf("failed to detect format: %w", err)
-	}
-
-	// Handle ZIP specially (needs to reopen with zip.OpenReader)
-	if detectedFormat == FormatZIP {
+	// Check if it's a ZIP file (special handling required)
+	if isZIP(f, size) {
 		return identifyZIP(path, opts)
 	}
 
-	// Single file - reuse the already-open file handle
-	romFile, ident, err := identifySingleReader(f, size, filepath.Base(path), opts)
+	// Single file - identify it
+	item, err := identifyReader(f, size, filepath.Base(path), opts)
 	if err != nil {
 		return nil, err
 	}
 
-	files := Files{
-		filepath.Base(path): *romFile,
-	}
-
-	return &ROM{
+	return &Result{
 		Path:  path,
-		Type:  ROMTypeFile,
-		Files: files,
-		Info:  ident,
+		Items: []Item{*item},
 	}, nil
 }
 
-func identifyZIP(path string, opts Options) (*ROM, error) {
+// identifyFolder handles a directory containing ROM files.
+func identifyFolder(path string, opts Options) (*Result, error) {
+	c, err := folder.NewFolderContainer(path)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	entries := c.Entries()
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("folder is empty")
+	}
+
+	items := make([]Item, 0, len(entries))
+
+	for _, entry := range entries {
+		reader, size, err := c.OpenFileAt(entry.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open %s: %w", entry.Name, err)
+		}
+
+		item, err := identifyReader(reader, size, entry.Name, opts)
+		reader.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to identify %s: %w", entry.Name, err)
+		}
+
+		items = append(items, *item)
+	}
+
+	return &Result{
+		Path:  path,
+		Items: items,
+	}, nil
+}
+
+// identifyZIP handles a ZIP archive.
+func identifyZIP(path string, opts Options) (*Result, error) {
 	handler := zip.NewZIPHandler()
 
 	archive, err := handler.Open(path)
@@ -150,97 +108,118 @@ func identifyZIP(path string, opts Options) (*ROM, error) {
 		return nil, fmt.Errorf("ZIP archive is empty")
 	}
 
-	// Slow mode: use full container introspection (decompresses files)
-	if opts.HashMode == HashModeSlow {
-		return identifyContainer(archive, ROMTypeZIP, path, opts)
-	}
-
-	// Fast/default mode: use ZIP metadata only (no decompression)
-	files := make(Files)
+	items := make([]Item, 0, len(entries))
 
 	for _, entry := range entries {
-		// Use extension-based format detection (no decompression)
-		// In fast mode, we can't verify with magic, so only trust unambiguous extensions
-		candidates := candidatesByExtension(entry.Name)
-		detectedFormat := FormatUnknown
-		if len(candidates) == 1 {
-			detectedFormat = candidates[0]
-		}
-
-		hashes := []Hash{}
-		if entry.CRC32 != 0 {
-			hashes = []Hash{
-				newHash(HashCRC32, fmt.Sprintf("%08x", entry.CRC32), HashSourceZIPMetadata),
+		if opts.HashMode == HashModeSlow {
+			// Slow mode: decompress and fully identify
+			reader, size, err := archive.OpenFileAt(entry.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open %s: %w", entry.Name, err)
 			}
-		}
 
-		files[entry.Name] = ROMFile{
-			Size:   entry.Size,
-			Format: detectedFormat,
-			Hashes: hashes,
+			item, err := identifyReader(reader, size, entry.Name, opts)
+			reader.Close()
+			if err != nil {
+				return nil, fmt.Errorf("failed to identify %s: %w", entry.Name, err)
+			}
+
+			items = append(items, *item)
+		} else {
+			// Fast/default mode: use ZIP metadata only (no decompression)
+			candidates := candidatesByExtension(entry.Name)
+			detectedFormat := FormatUnknown
+			if len(candidates) == 1 {
+				detectedFormat = candidates[0]
+			}
+
+			hashes := make(Hashes)
+			if entry.CRC32 != 0 {
+				hashes[HashZipCRC32] = fmt.Sprintf("%08x", entry.CRC32)
+			}
+
+			items = append(items, Item{
+				Name:   entry.Name,
+				Size:   entry.Size,
+				Format: detectedFormat,
+				Hashes: hashes,
+				Game:   nil, // No identification in fast mode
+			})
 		}
 	}
 
-	return &ROM{
+	return &Result{
 		Path:  path,
-		Type:  ROMTypeZIP,
-		Files: files,
-		Info:  nil, // No identification in fast/default mode
+		Items: items,
 	}, nil
 }
 
-// identifySingleReader identifies a file from a RandomAccessReader (works for any container).
-// Returns the ROMFile, game identification (if any), and an error.
-func identifySingleReader(r util.RandomAccessReader, size int64, name string, opts Options) (*ROMFile, GameInfo, error) {
+// identifyReader identifies a single file from a reader.
+// Returns an Item with format, hashes, and game info.
+// Accepts either *os.File or util.RandomAccessReader.
+func identifyReader(r util.RandomAccessReader, size int64, name string, opts Options) (*Item, error) {
+	// Try to identify format and game in one pass
+	format, game := identifyGame(r, size, name)
 
-	// Detect format and identify game using registry
-	detectedFormat, ident := identifyGameFromRegistry(r, size, name)
-
-	romFile := &ROMFile{
+	item := &Item{
+		Name:   name,
 		Size:   size,
-		Format: detectedFormat,
+		Format: format,
+		Game:   game,
 	}
 
-	// For CHD, always extract hashes from header (fast, no decompression)
-	if detectedFormat == FormatCHD {
+	// Handle hashes based on format
+	if format == FormatCHD {
+		// CHD: extract hashes from header (fast, no decompression needed)
+		if _, err := r.Seek(0, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("failed to seek: %w", err)
+		}
 		chdReader, err := chd.NewReader(r, size)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse CHD header: %w", err)
+			return nil, fmt.Errorf("failed to parse CHD header: %w", err)
 		}
 		header := chdReader.Header()
-		romFile.Hashes = []Hash{
-			newHash(HashSHA1, header.RawSHA1, HashSourceCHDRaw),
-			newHash(HashSHA1, header.SHA1, HashSourceCHDCompressed),
+		item.Hashes = Hashes{
+			HashCHDUncompressedSHA1: header.RawSHA1,
+			HashCHDCompressedSHA1:   header.SHA1,
 		}
-		return romFile, ident, nil
+		return item, nil
 	}
 
-	// Fast mode: skip calculating hashes for large files, but allow small files
+	// Fast mode: skip hashes for large files
 	if opts.HashMode == HashModeFast && size >= fastModeSmallFileThreshold {
-		return romFile, ident, nil
+		return item, nil
 	}
 
-	// For other formats, calculate hashes
-	// Reset reader position
-	if _, err := r.Seek(0, 0); err != nil {
-		return nil, nil, fmt.Errorf("failed to seek: %w", err)
+	// Calculate hashes - wrap reader to provide io.Reader interface
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("failed to seek: %w", err)
 	}
 
-	// Wrap RandomAccessReader as io.Reader for CalculateHashes
-	reader := &readerAtWrapper{r: r}
-	hashes, err := calculateHashes(reader)
+	hashes, err := calculateHashes(&readerAtWrapper{r: r})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to calculate hashes: %w", err)
+		return nil, fmt.Errorf("failed to calculate hashes: %w", err)
 	}
 
-	romFile.Hashes = hashes
-
-	return romFile, ident, nil
+	item.Hashes = hashes
+	return item, nil
 }
 
-// identifyGameFromRegistry uses the format registry to detect format and identify game.
-// Returns the detected format and game identification (if any).
-func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string) (Format, GameInfo) {
+// readerAtWrapper wraps a ReaderAt+Seeker to implement io.Reader.
+type readerAtWrapper struct {
+	r   io.ReaderAt
+	pos int64
+}
+
+func (w *readerAtWrapper) Read(p []byte) (n int, err error) {
+	n, err = w.r.ReadAt(p, w.pos)
+	w.pos += int64(n)
+	return n, err
+}
+
+// identifyGame tries to identify the format and game from a reader.
+// Returns the detected format and game info (nil if not identifiable).
+func identifyGame(r util.RandomAccessReader, size int64, name string) (Format, GameInfo) {
 	// Get candidate formats by extension
 	entries := formatsByExtension(name)
 	if len(entries) == 0 {
@@ -250,7 +229,7 @@ func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string
 	// Try each candidate's identifier
 	for _, entry := range entries {
 		// Reset reader position
-		if _, err := r.Seek(0, 0); err != nil {
+		if _, err := r.Seek(0, io.SeekStart); err != nil {
 			continue
 		}
 
@@ -263,9 +242,9 @@ func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string
 		}
 
 		// Try to identify using the entry's function
-		ident, err := entry.Identify(r, size)
+		game, err := entry.Identify(r, size)
 		if err == nil {
-			return entry.Format, ident
+			return entry.Format, game
 		}
 		// If identification fails, try next candidate
 	}
@@ -273,14 +252,7 @@ func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string
 	return FormatUnknown, nil
 }
 
-// readerAtWrapper wraps RandomAccessReader to implement io.Reader.
-type readerAtWrapper struct {
-	r   util.RandomAccessReader
-	pos int64
-}
-
-func (w *readerAtWrapper) Read(p []byte) (n int, err error) {
-	n, err = w.r.ReadAt(p, w.pos)
-	w.pos += int64(n)
-	return n, err
+// isZIP checks if a file is a ZIP archive by checking magic bytes.
+func isZIP(r io.ReaderAt, size int64) bool {
+	return checkMagic(r, size, zipOffset, zipMagic)
 }
