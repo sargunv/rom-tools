@@ -101,7 +101,6 @@ func identifyFolder(path string, opts Options) (*ROM, error) {
 }
 
 func identifyFile(path string, size int64, opts Options) (*ROM, error) {
-	// Open file for format detection
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -114,13 +113,13 @@ func identifyFile(path string, size int64, opts Options) (*ROM, error) {
 		return nil, fmt.Errorf("failed to detect format: %w", err)
 	}
 
-	// Handle ZIP specially
+	// Handle ZIP specially (needs to reopen with zip.OpenReader)
 	if detectedFormat == FormatZIP {
 		return identifyZIP(path, opts)
 	}
 
-	// Single file
-	romFile, ident, err := identifySingleFile(path, size, opts)
+	// Single file - reuse the already-open file handle
+	romFile, ident, err := identifySingleReader(f, size, filepath.Base(path), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -272,16 +271,6 @@ func identifyGameFromRegistry(r util.RandomAccessReader, size int64, name string
 	}
 
 	return FormatUnknown, nil
-}
-
-func identifySingleFile(path string, size int64, opts Options) (*ROMFile, GameInfo, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer f.Close()
-
-	return identifySingleReader(f, size, filepath.Base(path), opts)
 }
 
 // readerAtWrapper wraps RandomAccessReader to implement io.Reader.
