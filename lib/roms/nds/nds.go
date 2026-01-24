@@ -52,18 +52,18 @@ import (
 //   - Byte 3: Destination - target region (J=Japan, E=USA, P=Europe, etc.)
 
 const (
-	ndsHeaderSize        = 0x200 // 512 bytes
-	ndsTitleOffset       = 0x000
-	ndsTitleLen          = 12
-	ndsGameCodeOffset    = 0x00C
-	ndsGameCodeLen       = 4
-	ndsMakerCodeOffset   = 0x010
-	ndsMakerCodeLen      = 2
-	ndsUnitCodeOffset    = 0x012
-	ndsDeviceCapacityOff = 0x014
-	ndsRegionOffset      = 0x01D
-	ndsVersionOffset     = 0x01E
-	ndsHeaderChecksumOff = 0x15E
+	ndsHeaderSize           = 0x200 // 512 bytes
+	ndsTitleOffset          = 0x000
+	ndsTitleLen             = 12
+	ndsGameCodeOffset       = 0x00C
+	ndsGameCodeLen          = 4
+	ndsMakerCodeOffset      = 0x010
+	ndsMakerCodeLen         = 2
+	ndsUnitCodeOffset       = 0x012
+	ndsDeviceCapacityOffset = 0x014
+	ndsRegionOffset         = 0x01D
+	ndsVersionOffset        = 0x01E
+	ndsHeaderChecksumOffset = 0x15E
 )
 
 // NDSUnitCode indicates the target platform for the ROM.
@@ -218,9 +218,12 @@ func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
 		platform = core.PlatformNDS
 	}
 
-	// Extract device capacity and calculate ROM size
-	deviceCapacity := header[ndsDeviceCapacityOff]
-	romSize := (128 * 1024) << deviceCapacity
+	// Extract device capacity and calculate ROM size (max 512MB)
+	deviceCapacity := header[ndsDeviceCapacityOffset]
+	romSize := 0
+	if deviceCapacity <= 12 {
+		romSize = (128 * 1024) << deviceCapacity
+	}
 
 	// Extract NDS region
 	ndsRegion := NDSRegion(header[ndsRegionOffset])
@@ -229,7 +232,7 @@ func ParseNDS(r io.ReaderAt, size int64) (*NDSInfo, error) {
 	version := int(header[ndsVersionOffset])
 
 	// Extract header checksum (little-endian)
-	headerChecksum := binary.LittleEndian.Uint16(header[ndsHeaderChecksumOff:])
+	headerChecksum := binary.LittleEndian.Uint16(header[ndsHeaderChecksumOffset:])
 
 	return &NDSInfo{
 		Title:          title,

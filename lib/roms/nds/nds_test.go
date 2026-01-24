@@ -1,6 +1,7 @@
 package nds
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -78,23 +79,10 @@ func TestParseNDS(t *testing.T) {
 func TestParseNDS_TooSmall(t *testing.T) {
 	// Create a reader with less than header size
 	data := make([]byte, 100)
-	r := &bytesReaderAt{data: data}
+	r := bytes.NewReader(data)
 
 	_, err := ParseNDS(r, int64(len(data)))
 	if err == nil {
 		t.Error("ParseNDS() expected error for file too small, got nil")
 	}
-}
-
-// bytesReaderAt wraps a byte slice for io.ReaderAt
-type bytesReaderAt struct {
-	data []byte
-}
-
-func (r *bytesReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
-	if off >= int64(len(r.data)) {
-		return 0, nil
-	}
-	n = copy(p, r.data[off:])
-	return n, nil
 }
