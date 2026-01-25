@@ -102,6 +102,25 @@ type Info struct {
 	HeaderChecksum byte `json:"header_checksum"`
 }
 
+func (i *Info) GameRegions() []core.Region {
+	switch i.Destination {
+	case DestinationJapan:
+		return []core.Region{core.RegionJapan}
+	case DestinationEurope:
+		return []core.Region{core.RegionEurope}
+	case DestinationUSA:
+		return []core.Region{core.RegionUSA}
+	case DestinationFrance:
+		return []core.Region{core.RegionFrance}
+	case DestinationGermany:
+		return []core.Region{core.RegionGermany}
+	case DestinationItaly:
+		return []core.Region{core.RegionItaly}
+	default:
+		return []core.Region{}
+	}
+}
+
 // GamePlatform implements core.GameInfo.
 func (i *Info) GamePlatform() core.Platform { return core.PlatformGBA }
 

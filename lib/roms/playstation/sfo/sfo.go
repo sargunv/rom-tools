@@ -106,6 +106,49 @@ func (i *Info) GameSerial() string {
 	return normalizedID
 }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	// Infer region from disc ID prefix
+	if len(i.DiscID) >= 4 {
+		prefix := strings.ToUpper(i.DiscID[:4])
+		// US prefixes
+		switch prefix {
+		case "ULUS", "UCUS", "NPUG", "NPUH", "NPUZ", // PSP US
+			"BLUS", "BCUS", "NPUB", // PS3 US
+			"PCSA", "PCSE": // Vita US
+			return []core.Region{core.RegionUSA}
+		}
+		// EU prefixes
+		switch prefix {
+		case "ULES", "UCES", "NPEG", "NPEH", "NPEZ", // PSP EU
+			"BLES", "BCES", "NPEB", // PS3 EU
+			"PCSB", "PCSF": // Vita EU
+			return []core.Region{core.RegionEurope}
+		}
+		// JP prefixes
+		switch prefix {
+		case "ULJS", "UCJS", "NPJG", "NPJH", "NPJJ", "NPJZ", // PSP JP
+			"BLJM", "BLJS", "BCJS", "NPJB", // PS3 JP
+			"PCSC", "PCSG", "VLJM": // Vita JP
+			return []core.Region{core.RegionJapan}
+		}
+		// Asia prefixes
+		switch prefix {
+		case "ULAS", "UCAS", "NPAG", "NPAH", // PSP Asia
+			"BLAS", "BCAS", "NPAB", // PS3 Asia
+			"PCSH": // Vita Asia
+			return []core.Region{core.RegionAsia}
+		}
+		// Korea prefixes
+		switch prefix {
+		case "ULKS", "UCKS", "NPHG", "NPHH", "NPHZ", // PSP Korea/HK
+			"BLKS", "BCKS", "NPHB": // PS3 Korea
+			return []core.Region{core.RegionKorea}
+		}
+	}
+	return []core.Region{}
+}
+
 // Parse reads an SFO file and returns high-level game information.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	data, err := parsesfoData(r, size)

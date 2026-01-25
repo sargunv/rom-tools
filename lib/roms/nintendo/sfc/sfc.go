@@ -172,6 +172,44 @@ func (i *Info) GameTitle() string { return i.Title }
 // GameSerial implements core.GameInfo. SNES ROMs don't have a standard serial.
 func (i *Info) GameSerial() string { return "" }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Destination {
+	case DestinationJapan:
+		return []core.Region{core.RegionJapan}
+	case DestinationUSA:
+		return []core.Region{core.RegionUSA}
+	case DestinationEurope:
+		return []core.Region{core.RegionEurope}
+	case DestinationScandinavia:
+		return []core.Region{core.RegionDenmark, core.RegionNorway, core.RegionSweden}
+	case DestinationFrench:
+		return []core.Region{core.RegionFrance}
+	case DestinationDutch:
+		return []core.Region{core.RegionNetherlands}
+	case DestinationSpanish:
+		return []core.Region{core.RegionSpain}
+	case DestinationGerman:
+		return []core.Region{core.RegionGermany}
+	case DestinationItalian:
+		return []core.Region{core.RegionItaly}
+	case DestinationChinese:
+		return []core.Region{core.RegionChina}
+	case DestinationKorean:
+		return []core.Region{core.RegionKorea}
+	case DestinationCommon:
+		return []core.Region{core.RegionWorld}
+	case DestinationCanada:
+		return []core.Region{core.RegionCanada}
+	case DestinationBrazil:
+		return []core.Region{core.RegionBrazil}
+	case DestinationAustralia:
+		return []core.Region{core.RegionAustralia}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse extracts information from a SNES ROM file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	// Determine if there's a copier header (file size % 1024 == 512)

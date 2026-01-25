@@ -121,6 +121,21 @@ func (i *Info) GameSerial() string {
 	return fmt.Sprintf("%s-%03d", i.PublisherCode, i.GameNumber)
 }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	var regions []core.Region
+	if i.RegionFlags&RegionNorthAmerica != 0 {
+		regions = append(regions, core.RegionAmerica)
+	}
+	if i.RegionFlags&RegionJapan != 0 {
+		regions = append(regions, core.RegionJapan)
+	}
+	if i.RegionFlags&RegionRestOfWorld != 0 {
+		regions = append(regions, core.RegionWorld)
+	}
+	return regions
+}
+
 // Parse extracts game information from an XBE file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	return parseXBEAt(r, 0, size)

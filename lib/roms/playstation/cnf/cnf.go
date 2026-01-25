@@ -64,6 +64,25 @@ func (i *Info) GameTitle() string { return "" }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.DiscID }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	// Try to infer region from disc ID prefix
+	if len(i.DiscID) >= 4 {
+		prefix := i.DiscID[:4]
+		switch prefix {
+		case "SLUS", "SCUS": // US
+			return []core.Region{core.RegionUSA}
+		case "SLES", "SCES": // EU
+			return []core.Region{core.RegionEurope}
+		case "SLPS", "SCPS", "SLPM": // JP
+			return []core.Region{core.RegionJapan}
+		case "SLKA", "SCKA": // Korea
+			return []core.Region{core.RegionKorea}
+		}
+	}
+	return []core.Region{}
+}
+
 // Parse parses PlayStation SYSTEM.CNF content from a reader.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	data := make([]byte, size)

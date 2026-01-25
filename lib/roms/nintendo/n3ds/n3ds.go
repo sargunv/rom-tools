@@ -160,6 +160,28 @@ func (i *Info) GameTitle() string { return "" }
 // Returns the product code (e.g., "CTR-P-ALGE").
 func (i *Info) GameSerial() string { return i.ProductCode }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Region {
+	case RegionJapan:
+		return []core.Region{core.RegionJapan}
+	case RegionUSA:
+		return []core.Region{core.RegionUSA}
+	case RegionEurope:
+		return []core.Region{core.RegionEurope}
+	case RegionAustralia:
+		return []core.Region{core.RegionAustralia}
+	case RegionChina:
+		return []core.Region{core.RegionChina}
+	case RegionKorea:
+		return []core.Region{core.RegionKorea}
+	case RegionTaiwan:
+		return []core.Region{core.RegionTaiwan}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse extracts game information from a 3DS CCI/NCSD file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < ncsdHeaderSize {

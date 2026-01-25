@@ -7,4 +7,5 @@ type GameInfo interface {
 	GamePlatform() Platform
 	GameTitle() string  // May be empty if format doesn't have title
 	GameSerial() string // May be empty if format doesn't have serial
+	GameRegions() []Region
 }

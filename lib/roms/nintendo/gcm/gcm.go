@@ -138,6 +138,48 @@ func (i *Info) GameSerial() string {
 	return fmt.Sprintf("%c%s%c", i.SystemCode, i.GameCode, i.Region)
 }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Region {
+	case RegionJapan:
+		return []core.Region{core.RegionJapan}
+	case RegionNorthAmerica:
+		return []core.Region{core.RegionUSA}
+	case RegionEurope:
+		return []core.Region{core.RegionEurope}
+	case RegionAustralia:
+		return []core.Region{core.RegionAustralia}
+	case RegionKorea:
+		return []core.Region{core.RegionKorea}
+	case RegionTaiwan:
+		return []core.Region{core.RegionTaiwan}
+	case RegionGermany:
+		return []core.Region{core.RegionGermany}
+	case RegionFrance:
+		return []core.Region{core.RegionFrance}
+	case RegionSpain:
+		return []core.Region{core.RegionSpain}
+	case RegionItaly:
+		return []core.Region{core.RegionItaly}
+	case RegionNetherlands:
+		return []core.Region{core.RegionNetherlands}
+	case RegionRussia:
+		return []core.Region{core.RegionRussia}
+	case RegionScandinavia:
+		return []core.Region{core.RegionDenmark, core.RegionNorway, core.RegionSweden}
+	case RegionSystemChannels:
+		return []core.Region{core.RegionWorld}
+	case RegionJPImportPAL, RegionJPImportNTSC, RegionJPImportKorea:
+		return []core.Region{core.RegionJapan}
+	case RegionUSImportPAL, RegionUSImportKorea:
+		return []core.Region{core.RegionUSA}
+	case RegionSpecialX, RegionSpecialY, RegionSpecialZ:
+		return []core.Region{core.RegionEurope, core.RegionUSA}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse parses a GameCube/Wii disc header from a reader.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < discHeaderSize {

@@ -133,6 +133,32 @@ func (i *Info) GameTitle() string {
 // GameSerial implements core.GameInfo. Returns the full Content ID.
 func (i *Info) GameSerial() string { return i.ContentID }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	// Delegate to SFO if available
+	if i.SFO != nil {
+		return i.SFO.GameRegions()
+	}
+	// Infer from ContentID prefix (format: "XX####-TITLEID_##-...")
+	// The first 2 chars indicate region: UP=US, EP=EU, JP=JP, HP=Asia, KP=Korea
+	if len(i.ContentID) >= 2 {
+		prefix := i.ContentID[:2]
+		switch prefix {
+		case "UP":
+			return []core.Region{core.RegionUSA}
+		case "EP":
+			return []core.Region{core.RegionEurope}
+		case "JP":
+			return []core.Region{core.RegionJapan}
+		case "HP":
+			return []core.Region{core.RegionAsia}
+		case "KP":
+			return []core.Region{core.RegionKorea}
+		}
+	}
+	return []core.Region{}
+}
+
 // Parse extracts game information from a PlayStation PKG file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < pkgHeaderSize {

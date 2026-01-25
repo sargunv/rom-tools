@@ -153,6 +153,48 @@ func (i *Info) GameTitle() string { return i.Title }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.GameCode }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Destination {
+	case DestinationJapan:
+		return []core.Region{core.RegionJapan}
+	case DestinationNorthAmerica:
+		return []core.Region{core.RegionUSA}
+	case DestinationEurope, DestinationEuropeX, DestinationEuropeY, DestinationEuropeZ:
+		return []core.Region{core.RegionEurope}
+	case DestinationGermany:
+		return []core.Region{core.RegionGermany}
+	case DestinationFrance:
+		return []core.Region{core.RegionFrance}
+	case DestinationItaly:
+		return []core.Region{core.RegionItaly}
+	case DestinationSpain:
+		return []core.Region{core.RegionSpain}
+	case DestinationAustralia:
+		return []core.Region{core.RegionAustralia}
+	case DestinationBrazil:
+		return []core.Region{core.RegionBrazil}
+	case DestinationCanada:
+		return []core.Region{core.RegionCanada}
+	case DestinationChina:
+		return []core.Region{core.RegionChina}
+	case DestinationKorea:
+		return []core.Region{core.RegionKorea}
+	case DestinationNetherlands:
+		return []core.Region{core.RegionNetherlands}
+	case DestinationScandinavia:
+		return []core.Region{core.RegionDenmark, core.RegionNorway, core.RegionSweden}
+	case DestinationAll:
+		return []core.Region{core.RegionWorld}
+	case DestinationGatewayNTSC:
+		return []core.Region{core.RegionAmerica}
+	case DestinationGatewayPAL:
+		return []core.Region{core.RegionEurope, core.RegionAsia}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse extracts game information from an N64 ROM file, auto-detecting byte order.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < N64HeaderSize {

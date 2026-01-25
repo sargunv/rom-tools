@@ -90,6 +90,24 @@ func (i *Info) GameTitle() string { return i.Title }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.ProductNumber }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	var regions []core.Region
+	if i.Area&AreaJapanNTSC != 0 {
+		regions = append(regions, core.RegionJapan)
+	}
+	if i.Area&AreaAsiaNTSC != 0 {
+		regions = append(regions, core.RegionAsia)
+	}
+	if i.Area&AreaAmericasNTSC != 0 {
+		regions = append(regions, core.RegionAmerica)
+	}
+	if i.Area&AreaPAL != 0 {
+		regions = append(regions, core.RegionEurope)
+	}
+	return regions
+}
+
 // Parse parses Saturn metadata from a reader.
 // The reader should contain the ISO 9660 system area data.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {

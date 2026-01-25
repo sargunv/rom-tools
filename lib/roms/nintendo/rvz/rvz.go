@@ -121,6 +121,9 @@ func (i *Info) GameTitle() string { return i.GCM.GameTitle() }
 // GameSerial implements core.GameInfo by delegating to GCM.
 func (i *Info) GameSerial() string { return i.GCM.GameSerial() }
 
+// GameRegions implements core.GameInfo by delegating to GCM.
+func (i *Info) GameRegions() []core.Region { return i.GCM.GameRegions() }
+
 // Parse reads and parses an RVZ/WIA file header.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < totalHeaderSize {

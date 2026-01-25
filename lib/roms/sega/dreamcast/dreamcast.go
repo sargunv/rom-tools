@@ -99,6 +99,21 @@ func (i *Info) GameTitle() string { return i.Title }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.ProductNumber }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	var regions []core.Region
+	if i.Area&AreaJapan != 0 {
+		regions = append(regions, core.RegionJapan)
+	}
+	if i.Area&AreaUSA != 0 {
+		regions = append(regions, core.RegionUSA)
+	}
+	if i.Area&AreaEurope != 0 {
+		regions = append(regions, core.RegionEurope)
+	}
+	return regions
+}
+
 // Parse parses Dreamcast metadata from a reader.
 // The reader should contain the ISO 9660 system area data.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {

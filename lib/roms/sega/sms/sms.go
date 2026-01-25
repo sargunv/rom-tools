@@ -102,6 +102,20 @@ func (i *Info) GameTitle() string { return "" }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.ProductCode }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Region {
+	case RegionJapanSMS, RegionJapanGG:
+		return []core.Region{core.RegionJapan}
+	case RegionExportSMS, RegionExportGG:
+		return []core.Region{core.RegionWorld}
+	case RegionIntlGG:
+		return []core.Region{core.RegionWorld}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse extracts game information from a Master System or Game Gear ROM file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < smsMinROMSize {

@@ -192,6 +192,11 @@ func (i *Info) GameTitle() string { return "" }
 // GameSerial implements core.GameInfo. NES ROMs don't have serial numbers.
 func (i *Info) GameSerial() string { return "" }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	return []core.Region{}
+}
+
 // Parse extracts information from an NES ROM file (iNES or NES 2.0 format).
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < nesHeaderSize {

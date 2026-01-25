@@ -176,6 +176,52 @@ func (i *Info) GameTitle() string { return i.Title }
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.GameCode }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	switch i.Destination {
+	case DestinationJapan:
+		return []core.Region{core.RegionJapan}
+	case DestinationUSA, DestinationUSA2:
+		return []core.Region{core.RegionUSA}
+	case DestinationEurope, DestinationEuropeW, DestinationEuropeX, DestinationEuropeY, DestinationEuropeZ:
+		return []core.Region{core.RegionEurope}
+	case DestinationGermany:
+		return []core.Region{core.RegionGermany}
+	case DestinationFrance:
+		return []core.Region{core.RegionFrance}
+	case DestinationItaly:
+		return []core.Region{core.RegionItaly}
+	case DestinationSpain:
+		return []core.Region{core.RegionSpain}
+	case DestinationAustralia:
+		return []core.Region{core.RegionAustralia}
+	case DestinationChina:
+		return []core.Region{core.RegionChina}
+	case DestinationKorea:
+		return []core.Region{core.RegionKorea}
+	case DestinationNetherlands:
+		return []core.Region{core.RegionNetherlands}
+	case DestinationSweden:
+		return []core.Region{core.RegionSweden}
+	case DestinationNorway:
+		return []core.Region{core.RegionNorway}
+	case DestinationDenmark:
+		return []core.Region{core.RegionDenmark}
+	case DestinationRussia:
+		return []core.Region{core.RegionRussia}
+	case DestinationAsia:
+		return []core.Region{core.RegionAsia}
+	case DestinationIntl:
+		return []core.Region{core.RegionWorld}
+	case DestinationUSAAustralia:
+		return []core.Region{core.RegionUSA, core.RegionAustralia}
+	case DestinationEurAustralia:
+		return []core.Region{core.RegionEurope, core.RegionAustralia}
+	default:
+		return []core.Region{}
+	}
+}
+
 // Parse extracts game information from an NDS ROM file.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
 	if size < ndsHeaderSize {

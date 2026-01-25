@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/sargunv/rom-tools/internal/format"
 	"github.com/sargunv/rom-tools/lib/core"
@@ -153,9 +154,23 @@ func outputText(result *romident.Result) {
 				if item.Game.GameSerial() != "" {
 					fmt.Printf("      Serial: %s\n", item.Game.GameSerial())
 				}
+				if regions := item.Game.GameRegions(); len(regions) > 0 {
+					fmt.Printf("      Region: %s\n", formatRegions(regions))
+				}
 			}
 		}
 	}
+}
+
+func formatRegions(regions []core.Region) string {
+	if len(regions) == 0 {
+		return ""
+	}
+	strs := make([]string, len(regions))
+	for i, r := range regions {
+		strs[i] = string(r)
+	}
+	return strings.Join(strs, ", ")
 }
 
 func formatSize(bytes int64) string {

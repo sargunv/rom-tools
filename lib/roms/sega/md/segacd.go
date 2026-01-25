@@ -90,6 +90,21 @@ func (i *CDInfo) GameTitle() string {
 // GameSerial implements core.GameInfo.
 func (i *CDInfo) GameSerial() string { return i.SerialNumber }
 
+// GameRegions implements core.GameInfo.
+func (i *CDInfo) GameRegions() []core.Region {
+	var regions []core.Region
+	if i.Region&RegionDomestic60Hz != 0 {
+		regions = append(regions, core.RegionJapan)
+	}
+	if i.Region&RegionOverseas60Hz != 0 {
+		regions = append(regions, core.RegionAmerica)
+	}
+	if i.Region&RegionOverseas50Hz != 0 {
+		regions = append(regions, core.RegionEurope, core.RegionAsia)
+	}
+	return regions
+}
+
 // ParseCD parses Sega CD metadata from a reader.
 // The reader should contain the ISO 9660 system area data.
 func ParseCD(r io.ReaderAt, size int64) (*CDInfo, error) {

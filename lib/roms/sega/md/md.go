@@ -163,6 +163,21 @@ func (i *Info) GameTitle() string {
 // GameSerial implements core.GameInfo.
 func (i *Info) GameSerial() string { return i.SerialNumber }
 
+// GameRegions implements core.GameInfo.
+func (i *Info) GameRegions() []core.Region {
+	var regions []core.Region
+	if i.Region&RegionDomestic60Hz != 0 {
+		regions = append(regions, core.RegionJapan)
+	}
+	if i.Region&RegionOverseas60Hz != 0 {
+		regions = append(regions, core.RegionAmerica)
+	}
+	if i.Region&RegionOverseas50Hz != 0 {
+		regions = append(regions, core.RegionEurope, core.RegionAsia)
+	}
+	return regions
+}
+
 // Parse extracts game information from a Mega Drive ROM file.
 // It automatically detects and handles both native MD and SMD formats.
 func Parse(r io.ReaderAt, size int64) (*Info, error) {
