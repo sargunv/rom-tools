@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.4
 	github.com/expr-lang/expr v1.17.7
-	github.com/klauspost/compress v1.18.3
+	github.com/klauspost/compress v1.18.7
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/spf13/cobra v1.10.2
 	github.com/ulikunitz/xz v0.5.15
